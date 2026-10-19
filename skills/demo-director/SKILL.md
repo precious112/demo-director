@@ -146,7 +146,15 @@ Two modes, one engine:
 
 Scaffold a project with `node scripts/new-project.mjs ./films/my-film "My film"`:
 it copies the stage shell and the tools in, and writes a starter `film.mjs` and
-`package.json`. Then write `world.html`, `world.css`, `world.js`. Do not edit the
+`package.json`.
+
+**A film must never bloat the product's repository.** The scaffolder adds the
+film's top-level folder (`films/`) to the repo's `.gitignore` and gives each film
+its own `.gitignore` for `renders/`, `node_modules/` and video. Tell the owner
+where the film lives and that git ignores it. Use `--track` only if the owner asks
+to keep the plan and script in git; renders stay ignored either way. If you set a
+film up without the scaffolder, do the same by hand before you render anything,
+and never `git add` a film folder or a video. Then write `world.html`, `world.css`, `world.js`. Do not edit the
 shell per film. Render at 2x device scale so a zoom stays crisp; encode H.264,
 `yuv420p`, CRF 12–14, `+faststart`.
 
