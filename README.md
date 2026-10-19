@@ -5,6 +5,13 @@ plans the film as a storyboard, then builds a frame-accurate video from code —
 a faithful walkthrough of a real-looking app, or a motion-design piece that is not a
 walkthrough at all.
 
+https://github.com/user-attachments/assets/183da761-51d4-449c-8c34-f6bf3ba143d0
+
+*Made with this skill: a 35-second launch film for
+[code-slowmo](https://github.com/precious112/code-slowmo), planned as a storyboard,
+then rendered frame by frame from code. It can make videos like this for your
+product too.*
+
 Most demo tools give you a screen recorder and a template. This gives the agent a
 director's rules and a render kit: real UI density, camera and cursor motion with a
 steady hand, honest captions, and a frame-by-frame review before anything ships.
@@ -17,9 +24,8 @@ order. The camera and cursor do the explaining.
 ![Harbor walkthrough](media/harbor-walkthrough.gif)
 
 **A motion-design piece.** The product appears, but composition, type and rhythm
-carry the film. Not every launch is a feature tour.
-
-![code-slowmo promo](media/code-slowmo-promo.gif)
+carry the film. Not every launch is a feature tour. The code-slowmo film at the top
+is this mode; its full source is in `skills/demo-director/assets/examples/code-slowmo/`.
 
 The skill decides between **walkthrough**, **motion design** and **hybrid**, says
 which it chose and why, and holds to what that mode allows. A motion-design film is
