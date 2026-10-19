@@ -1,0 +1,107 @@
+/*
+ * The stage shell. Keep this file as-is across films; a project changes the
+ * look by styling the world and by overriding the tokens below in world.css.
+ *
+ * Tokens a project is expected to set:
+ *   --bg      the film's flat background (the product's own background)
+ *   --ink     caption / card text
+ *   --muted   secondary card text
+ *   --display the film's display face (title cards)
+ *   --sans    the film's body face (captions)
+ */
+
+:root {
+  --bg: #0d0f13;
+  --ink: #f2f4f7;
+  --muted: #98a2b3;
+  --display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Set from the format: where captions sit and how big they read. */
+  --cap-size: 48px;
+  --cap-y: 88px;
+  --cap-align: center;
+  --cap-max: 84%;
+
+  --pad: 72px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+#stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* The camera. `will-change` keeps the transform on its own layer so dense UI
+   does not re-rasterise on every frame of a zoom. */
+#world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Captions sit in the product's type, on the product's ground, with an optional
+   scrim so they read over dense UI. One caption at a time, one line. */
+#caption {
+  position: absolute;
+  left: 50%;
+  top: var(--cap-y);
+  transform: translateX(-50%);
+  max-width: var(--cap-max);
+  text-align: var(--cap-align);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--cap-size);
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  color: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+#caption[data-scrim="1"] {
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  padding: 0.22em 0.6em;
+  border-radius: 10px;
+  text-shadow: none;
+}
+
+#card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45em;
+  padding: var(--pad);
+  text-align: center;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+}
+#card[data-kind="none"] { display: none; }
+#card .title { font-family: var(--display); font-weight: 700; font-size: calc(var(--cap-size) * 1.9); letter-spacing: -0.03em; line-height: 1.02; }
+#card .sub { font-family: var(--sans); font-weight: 500; font-size: calc(var(--cap-size) * 0.62); color: var(--muted); max-width: 70%; }
+#card .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: calc(var(--cap-size) * 0.52); color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 0.35em 0.7em; }
+
+#cursor { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+#cursor svg { position: absolute; left: 0; top: 0; display: block; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5)); }
+#cursor[data-visible="0"] { display: none; }
+#cursor[data-down="1"] svg { transform: scale(0.92); }
+
+/* Per-format defaults. The script sets data-format; a project can still
+   override any token from world.css. */
+html[data-format="phone"] { --cap-size: 46px; --cap-y: 84px; }
+html[data-format="vertical"] { --cap-size: 52px; --cap-y: 140px; }
+html[data-format="square"] { --cap-size: 46px; --cap-y: 76px; }
+html[data-format="wide"] { --cap-size: 40px; --cap-y: auto; --cap-align: left; --cap-max: 46%; }

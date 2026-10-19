@@ -1,0 +1,12 @@
+{
+  "name": "demo-director",
+  "description": "Direct and build product demo videos: walkthroughs and motion-design films, planned as a storyboard first.",
+  "owner": { "name": "precious112", "url": "https://github.com/precious112" },
+  "plugins": [
+    {
+      "name": "demo-director",
+      "source": "./",
+      "description": "Product demo videos as frame-accurate, scripted films. Plans a storyboard for approval, then renders faithful app walkthroughs and motion-design pieces with Playwright and ffmpeg."
+    }
+  ]
+}

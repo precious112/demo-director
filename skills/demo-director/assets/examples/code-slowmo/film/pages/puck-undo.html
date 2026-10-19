@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How undo works in Puck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* code-slowmo page template. Do not edit per page: pages are built from a JSON data file by scripts/build.py. */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --line:#C9D2CE; --line-soft:#DCE3DF;
+  --ink:#14201C; --muted:#56655F; --faint:#8A9893;
+  --r1:#A86200; --r2:#7148C8; --r3:#1C66C4; --r4:#0A7F60; --r5:#BC2F63; --r0:#56655F;
+  --r1-bg:#FBEFDC; --r2-bg:#EEE8FA; --r3-bg:#E3EEFB; --r4-bg:#DDF2EA; --r5-bg:#FAE3EB; --r0-bg:#E7ECE9;
+  --hot:#FFF1B8; --hot-ink:#5A4300; --code-bg:#FAFBFA; --good:#0A7F60; --good-bg:#DDF2EA; --bad:#BC2F63; --bad-bg:#FAE3EB;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --sans:"Instrument Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1412; --surface:#151D1A; --surface-2:#1C2622; --line:#2D3A35; --line-soft:#232E2A;
+    --ink:#E2EAE6; --muted:#97A7A0; --faint:#6A7A74;
+    --r1:#F0A23A; --r2:#A88BF2; --r3:#5EA3F3; --r4:#3DC79D; --r5:#F0729E; --r0:#97A7A0;
+    --r1-bg:#33260F; --r2-bg:#261E3B; --r3-bg:#14263C; --r4-bg:#10302A; --r5-bg:#3A1826; --r0-bg:#1C2622;
+    --hot:#4A3E0E; --hot-ink:#FFE38A; --code-bg:#121916; --good:#3DC79D; --good-bg:#10302A; --bad:#F0729E; --bad-bg:#3A1826;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1C2622; --line:#2D3A35; --line-soft:#232E2A;
+  --ink:#E2EAE6; --muted:#97A7A0; --faint:#6A7A74;
+  --r1:#F0A23A; --r2:#A88BF2; --r3:#5EA3F3; --r4:#3DC79D; --r5:#F0729E; --r0:#97A7A0;
+  --r1-bg:#33260F; --r2-bg:#261E3B; --r3-bg:#14263C; --r4-bg:#10302A; --r5-bg:#3A1826; --r0-bg:#1C2622;
+  --hot:#4A3E0E; --hot-ink:#FFE38A; --code-bg:#121916; --good:#3DC79D; --good-bg:#10302A; --bad:#F0729E; --bad-bg:#3A1826;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 80px}
+a{color:var(--r3)}
+code{font-family:var(--mono); font-size:.86em; background:var(--surface-2); border-radius:4px; padding:0 4px}
+code.term{border-bottom:1.5px dotted var(--muted); cursor:help}
+h1,h2,h3,h4{font-family:var(--display); text-wrap:balance; margin:0; line-height:1.12}
+h2{font-size:clamp(24px,3vw,32px); font-weight:700}
+p{margin:0}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--r3); outline-offset:2px}
+[hidden]{display:none!important}
+.col{max-width:68ch; margin-inline:auto}
+.stage{max-width:1180px; margin-inline:auto}
+section.sec{padding-block:52px 4px}
+.eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:10px}
+.lede{color:var(--muted); font-size:17px; margin-top:12px}
+.lede p+p{margin-top:10px}
+
+/* header */
+header.top{padding-block:48px 8px}
+h1{font-size:clamp(34px,6vw,60px); font-weight:700; letter-spacing:-.02em}
+.question{font-family:var(--display); font-size:clamp(19px,2.4vw,24px); font-weight:600; margin-top:16px; color:var(--ink)}
+.question::before{content:"The question: "; color:var(--muted); font-weight:600}
+.subject{font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:14px}
+.legend{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:20px; font-size:14px}
+.legend span{display:inline-flex; gap:7px; align-items:baseline}
+.legend i{width:11px; height:11px; border-radius:3px; background:var(--c); transform:translateY(1px)}
+.legend b{color:var(--c)} .legend em{font-style:normal; color:var(--muted)}
+.toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:22px}
+.toc a{font-size:14px; text-decoration:none; color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:4px 12px; background:var(--surface)}
+.toc a:hover{border-color:var(--ink)}
+.toc a span{font-family:var(--mono); font-size:11px; color:var(--muted); margin-right:6px}
+
+/* role chips in prose: <span class="role" data-role="id">text</span> */
+.role{font-weight:600; border-radius:4px; padding:0 4px; color:var(--c); background:var(--cbg)}
+
+/* tooltip for explained code terms */
+#tip{position:fixed; z-index:50; max-width:300px; background:var(--ink); color:var(--bg); font-size:13.5px; line-height:1.45; border-radius:8px; padding:8px 10px; pointer-events:none; box-shadow:0 6px 24px rgba(0,0,0,.2)}
+#tip b{font-family:var(--mono); font-weight:500; display:block; font-size:12px; opacity:.75; margin-bottom:2px}
+
+/* demo frame */
+.demo{background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-top:22px; overflow:hidden}
+.demo-head{display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--line-soft)}
+.demo-head .t{font-family:var(--mono); font-size:12px; color:var(--muted)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:7px; overflow:hidden}
+.seg button{background:none; border:0; padding:6px 12px; font-size:13px; cursor:pointer; color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.scroll-x{overflow-x:auto}
+
+/* transport */
+.transport{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:12px 16px; border-top:1px solid var(--line-soft)}
+.tbtn{display:inline-grid; place-items:center; width:34px; height:34px; border:1px solid var(--line); border-radius:7px; background:var(--surface); cursor:pointer}
+.tbtn:hover{border-color:var(--ink)}
+.tbtn svg{width:16px; height:16px}
+.tbtn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink); width:auto; padding:0 14px; gap:6px; grid-auto-flow:column; font-size:14px; font-weight:600}
+.count{font-family:var(--mono); font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; min-width:6em}
+.scrub{position:relative; flex:1 1 220px; height:36px; min-width:160px}
+.scrub input{position:absolute; inset:0; width:100%; margin:0; opacity:0; cursor:pointer; z-index:2}
+.scrub .track{position:absolute; left:0; right:0; top:15px; height:3px; border-radius:2px; background:var(--line)}
+.scrub .fill{position:absolute; left:0; top:15px; height:3px; border-radius:2px; background:var(--ink)}
+.scrub .knob{position:absolute; top:9px; width:15px; height:15px; margin-left:-7px; border-radius:50%; background:var(--ink); border:3px solid var(--surface); box-shadow:0 0 0 1px var(--ink)}
+.scrub input:focus-visible ~ .knob{box-shadow:0 0 0 3px var(--r3)}
+.scrub .tick{position:absolute; top:22px; transform:translateX(-50%); font-family:var(--mono); font-size:10px; color:var(--muted); white-space:nowrap}
+.scrub .tick::before{content:""; position:absolute; left:50%; top:-8px; width:2px; height:6px; background:var(--muted); margin-left:-1px}
+.scrub .tick.first{transform:none} .scrub .tick.first::before{left:1px}
+.scrub .tick.last{transform:translateX(-100%)} .scrub .tick.last::before{left:auto; right:0}
+.speed{font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center}
+.speed select{font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:3px 4px}
+
+/* side panels / narration */
+.side{padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.side .k,.blk .k{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted)}
+.side h4{font-size:20px; font-weight:600}
+.side p{font-size:15px; line-height:1.55}
+.side .path{font-family:var(--mono); font-size:12px; color:var(--muted); word-break:break-all}
+.side ul{margin:0; padding-left:18px; font-size:14px; color:var(--muted)}
+.say{border-radius:8px; padding:12px 14px; background:var(--surface-2); font-size:15px; line-height:1.55; border-left:3px solid var(--c, var(--line))}
+.say .stepn{font-family:var(--mono); font-size:11px; color:var(--muted); display:block; margin-bottom:4px}
+
+/* screen (agent-written mini UI) and state readout */
+.screen{border:1px solid var(--line); border-radius:8px; background:var(--surface); padding:10px; font-size:13px; overflow:auto}
+.screen-label{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:6px}
+.scr-row{display:flex; gap:8px; align-items:stretch} .scr-col{display:flex; flex-direction:column; gap:6px; min-width:0}
+.scr-box{border:1px solid var(--line); border-radius:5px; padding:6px 8px; background:var(--surface)}
+.scr-muted{color:var(--muted)} .scr-hot{background:var(--hot); color:var(--hot-ink)} .scr-sel{box-shadow:0 0 0 2px var(--r3)}
+.scr-ghost{opacity:.4; border-style:dashed} .scr-off{opacity:.45; filter:grayscale(1)} .scr-line{height:3px; border-radius:2px; background:var(--r3)}
+.scr-tag{font-family:var(--mono); font-size:10px; color:var(--faint)}
+.state{display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 12px; font-family:var(--mono); font-size:12px; border:1px solid var(--line-soft); border-radius:8px; padding:8px 10px; background:var(--surface)}
+.state .sk{color:var(--muted)} .state .sv{word-break:break-word; border-radius:3px; padding:0 3px}
+.chg{background:var(--hot); color:var(--hot-ink)}
+
+/* glossary */
+.gloss{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:22px}
+.gcard{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; flex-direction:column; gap:6px}
+.gcard b{font-family:var(--display); font-size:18px; font-weight:600}
+.gcard .code{font-family:var(--mono); font-size:12px; color:var(--muted)}
+.gcard p{font-size:14.5px}
+.gcard .ex{font-size:13.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:6px}
+
+/* map */
+.map-wrap{display:grid; grid-template-columns:minmax(0,1fr) 300px}
+@media (max-width:900px){ .map-wrap{grid-template-columns:1fr} .map-wrap .side{border-top:1px solid var(--line-soft)} }
+@media (min-width:901px){ .map-wrap .side{border-left:1px solid var(--line-soft)} }
+.map{padding:12px; min-width:0}
+.map svg{display:block; width:100%; min-width:620px; height:auto; font-family:var(--sans)}
+.area rect{fill:var(--surface-2); stroke:var(--line)}
+.area .al{font-family:var(--mono); font-size:11px; fill:var(--muted); letter-spacing:.05em; text-transform:uppercase}
+.area .ab{font-family:var(--display); font-size:21px; font-weight:600; fill:var(--ink)}
+.area .as{font-size:12.5px; fill:var(--muted)}
+.mode-areas .area{cursor:pointer} .mode-areas .area:hover rect{stroke:var(--ink)}
+.mode-parts .area .ab,.mode-parts .area .as{display:none} .mode-areas .area .al{display:none}
+.mode-areas .part,.mode-areas .link{display:none} .mode-parts .alink{display:none}
+.part{cursor:pointer}
+.part rect{fill:var(--surface); stroke:var(--c); stroke-width:1.5}
+.part text{fill:var(--ink); font-size:13px; font-weight:600}
+.part text.s{fill:var(--muted); font-size:11px; font-weight:400; font-family:var(--mono)}
+.part:hover rect,.part.on rect{fill:var(--cbg); stroke-width:2.5}
+.link path{fill:none; stroke:var(--faint); stroke-width:1.4}
+.link polygon{fill:var(--faint)}
+.link text,.alink text{font-size:11px; fill:var(--muted); paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
+.alink text{font-size:12px; fill:var(--ink)}
+.alink path{fill:none; stroke:var(--muted); stroke-width:1.8} .alink polygon{fill:var(--muted)}
+.link.on path{stroke:var(--c); stroke-width:2.6} .link.on polygon{fill:var(--c)} .link.on text{fill:var(--ink); font-weight:600}
+.dim .part:not(.on),.dim .link:not(.on){opacity:.2}
+.badge circle{fill:var(--ink)} .badge text{fill:var(--bg); font-size:11px; font-weight:700; font-family:var(--mono)}
+
+/* flow */
+.flow-wrap{display:grid; grid-template-columns:minmax(0,1fr) 380px}
+@media (max-width:1000px){ .flow-wrap{grid-template-columns:1fr} .flow-wrap .side{border-top:1px solid var(--line-soft)} }
+@media (min-width:1001px){ .flow-wrap .side{border-left:1px solid var(--line-soft)} }
+.flow{padding:12px; min-width:0}
+.flow svg{display:block; width:100%; min-width:620px; height:auto; font-family:var(--sans)}
+.lane-h rect{fill:var(--cbg); stroke:var(--c)} .lane-h text{font-size:12px; font-weight:600; fill:var(--c)}
+.lifeline{stroke:var(--line); stroke-dasharray:3 4}
+.msg{cursor:pointer}
+.msg line,.msg path{stroke:var(--faint); stroke-width:1.4; fill:none} .msg polygon{fill:var(--faint)}
+.msg text{font-size:11.5px; fill:var(--muted)} .msg .num{font-family:var(--mono); font-size:10px; fill:var(--faint)}
+.msg .band{fill:transparent}
+.msg.past line,.msg.past path{stroke:var(--muted)} .msg.past polygon{fill:var(--muted)} .msg.past text{fill:var(--ink)}
+.msg.future{opacity:.35}
+.msg.on line,.msg.on path{stroke:var(--c); stroke-width:2.6} .msg.on polygon{fill:var(--c)} .msg.on text{fill:var(--ink); font-weight:600} .msg.on .band{fill:var(--cbg)}
+.phase{font-family:var(--mono); font-size:10px; fill:var(--faint); letter-spacing:.06em} .phase-line{stroke:var(--line-soft)}
+
+/* trace */
+.trace{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+@media (max-width:1000px){ .trace{grid-template-columns:1fr} .codepane{border-bottom:1px solid var(--line-soft)} }
+@media (min-width:1001px){ .codepane{border-right:1px solid var(--line-soft)} }
+.codepane{min-width:0; display:flex; flex-direction:column}
+.filetabs{display:flex; flex-wrap:wrap; gap:2px; padding:8px 8px 0; border-bottom:1px solid var(--line-soft); background:var(--surface-2)}
+.filetab{font-family:var(--mono); font-size:11.5px; padding:6px 10px; border-radius:6px 6px 0 0; color:var(--muted); border:1px solid transparent; border-bottom:0; margin-bottom:-1px}
+.filetab.on{background:var(--code-bg); color:var(--ink); border-color:var(--line-soft)}
+.code{background:var(--code-bg); font-family:var(--mono); font-size:12.5px; line-height:1.65; overflow:auto; max-height:600px; padding-block:8px}
+.ln{display:grid; grid-template-columns:22px 40px minmax(0,1fr); white-space:pre}
+.ln .ar{color:var(--r3); text-align:center; font-size:11px} .ln .no{color:var(--faint); text-align:right; padding-right:12px; user-select:none} .ln .cd{padding-right:12px}
+.ln.cur{background:var(--hot)} .ln.cur .cd{color:var(--hot-ink)} .ln.rng{background:color-mix(in srgb, var(--hot) 45%, transparent)}
+.ln.dim .cd{opacity:.45}
+.tk{color:var(--r2)} .ts{color:var(--r4)} .tc{color:var(--faint); font-style:italic} .tf{color:var(--r3)}
+.callout{margin:4px 12px 8px 62px; font-family:var(--sans); font-size:14.5px; line-height:1.55; white-space:normal; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--r3); border-radius:6px; padding:10px 12px; color:var(--ink)}
+.ask{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line)}
+.ask b{display:block; margin-bottom:8px}
+.opts{display:flex; flex-wrap:wrap; gap:6px}
+.opts button{border:1px solid var(--line); background:var(--surface-2); border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer}
+.opts button:hover{border-color:var(--ink)}
+.opts button.right{background:var(--good-bg); border-color:var(--good); color:var(--good)} .opts button.wrong{background:var(--bad-bg); border-color:var(--bad); color:var(--bad)}
+.reveal{margin-top:8px; font-size:14px}
+.statepane{display:flex; flex-direction:column; min-width:0}
+.blk{padding:12px 16px; border-bottom:1px solid var(--line-soft); min-width:0}
+.blk:last-child{border-bottom:0}
+.blk .k{margin-bottom:8px; display:flex; justify-content:space-between; gap:8px}
+.stack{display:flex; flex-direction:column-reverse; gap:3px}
+.frame{font-family:var(--mono); font-size:12px; padding:4px 8px; border-radius:5px; border-left:3px solid var(--c); background:var(--surface-2); color:var(--muted); display:flex; justify-content:space-between; gap:8px}
+.frame.top{background:var(--cbg); color:var(--ink); font-weight:500}
+.frame small{color:var(--faint); font-size:10.5px; font-family:var(--sans); text-align:right}
+.vars{display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 12px; font-family:var(--mono); font-size:12px}
+.vars .vn{color:var(--muted); cursor:default} .vars .vv{word-break:break-word; border-radius:3px; padding:0 3px}
+.log{font-family:var(--mono); font-size:11.5px; line-height:1.6; max-height:160px; overflow:auto; display:flex; flex-direction:column}
+.log div{display:grid; grid-template-columns:auto minmax(0,1fr); gap:8px}
+.log div span:first-child{color:var(--c); font-weight:500}
+.log div.new{background:var(--hot); color:var(--hot-ink)}
+.none{color:var(--faint); font-size:13px}
+.example{font-family:var(--mono); font-size:10px; color:var(--r1); border:1px solid currentColor; border-radius:3px; padding:0 3px; margin-left:4px; vertical-align:1px; background:none}
+
+/* compare */
+.cmp{display:grid; grid-template-columns:1fr 1fr}
+@media (max-width:760px){ .cmp{grid-template-columns:1fr} }
+.cmp > div{padding:16px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.cmp > div + div{border-left:1px solid var(--line-soft)}
+@media (max-width:760px){ .cmp > div + div{border-left:0; border-top:1px solid var(--line-soft)} }
+.cmp h4{font-size:18px; font-weight:600}
+
+/* text, custom, takeaway */
+.prose{display:flex; flex-direction:column; gap:12px; margin-top:16px; font-size:16.5px}
+.custom{margin-top:22px}
+.takeaway{margin-top:56px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px 24px}
+.takeaway .eyebrow{margin-bottom:6px}
+.takeaway p{font-family:var(--display); font-size:clamp(20px,2.6vw,26px); font-weight:600; line-height:1.3}
+footer{margin-top:40px; font-size:13px; color:var(--faint)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important; animation:none!important; scroll-behavior:auto!important} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="tip" hidden></div>
+<script id="page-data" type="application/json">{"title": "How undo works in Puck", "eyebrow": "Puck · undo and redo", "question": "When you move a block and then press undo, what does Puck do?", "intro": ["This page follows one move and one undo. The page has two blocks, Hero then Text. You drag Text above Hero, then press Cmd+Z.", "The page starts with the words you need, then a map of the parts, then the order of events. The last sections step through the real code, line by line."], "subject": "Puck 0.23.0 · packages/core · commit 574471f5", "roles": [{"id": "you", "name": "You", "about": "your keyboard and pointer"}, {"id": "ctrl", "name": "Puck's controls", "about": "the Undo button, shortcuts and drag handler"}, {"id": "hist", "name": "Undo history", "about": "saved copies of your page"}, {"id": "data", "name": "Page data", "about": "your page right now"}, {"id": "draw", "name": "Screen", "about": "what React redraws"}], "terms": {"histories": "The undo list in Puck's code: every saved copy of your page, oldest first.", "index": "The position in Puck's code: which copy in the undo list matches the screen. It starts at 0.", "back": "Puck's undo function. The Undo button and Cmd+Z both call it.", "forward": "Puck's redo function. The Redo button, Cmd+Shift+Z and Cmd+Y call it.", "record": "Puck's recorder: the function that adds a copy of the page to the undo list.", "moveComponent": "Puck's function that moves a block from one spot on the page to another.", "recordHistory: false": "A setting on an action that tells the store: save no undo step for this one.", "recordHistory": "A setting on an action. True means save an undo step, false means don't.", "movedToNewPosition": "True when the dropped block ended up in a different list or at a different position.", "dispatch": "The store's function for receiving an action. Sending an action is the only way the page data changes.", "hasPast": "A small function that answers: is there a copy before the current position?", "prevHistory": "A small function that returns the copy one before the current position.", "tidyState": "A helper that copies the saved page and clears which settings box had the typing cursor.", "set": "Puck's action that replaces the whole page data with the data you give it.", "state": "The variable that holds the copy the undo function will send to the store.", "appStore": "Puck's page data store: the place in memory that holds your page and tells the screen when it changes."}, "sections": [{"type": "glossary", "id": "words", "title": "Words you need first", "intro": "Six words come up on every step. Each card says what the word means, with an example from this page.", "items": [{"word": "Block", "code": "component", "role": "draw", "meaning": "One piece of your page, like a Hero or a Text block. The page in this example has two blocks: Hero, then Text."}, {"word": "Page data store", "code": "appStore", "role": "data", "meaning": "The place in memory that holds your page right now: which blocks, in what order, and which one you selected. When it changes, React redraws the screen."}, {"word": "Action", "role": "data", "meaning": "A small note that describes one change, like \"move the block at position 1 to position 0\". Puck sends actions to the page data store, and the store applies them."}, {"word": "Undo list", "code": "histories", "role": "hist", "meaning": "A list of full copies of your page. Puck adds a new copy after each change you can undo. Each copy holds the whole page, not the change.", "example": "After one move, the list holds two copies: the page as it loaded, and the page after the move."}, {"word": "Position", "code": "index", "role": "hist", "meaning": "A number that points at the copy in the undo list that matches the screen. Positions start at 0. Undo moves the position back by one. Redo moves it forward by one."}, {"word": "Undo step", "role": "hist", "meaning": "One copy in the undo list. Moving, adding or deleting a block saves one. Clicking a block to select it saves none."}]}, {"type": "map", "id": "map", "title": "The parts that undo touches", "intro": "The map starts with five areas of the editor. Click an area to see its parts, or press Next to follow one move and one undo.", "note": "packages/core", "start": {"title": "Undo swaps in an old copy of the page", "body": ["After each change, Puck saves a full copy of your page in a list.", "Undo takes the copy before the current one and puts it back in the page data store. It never works out how to reverse a move."]}, "rows": [["top", "keys"], ["history"], ["data"], ["canvas"]], "areas": [{"id": "top", "name": "Top bar", "about": "The Undo and Redo buttons, above the page."}, {"id": "keys", "name": "Keyboard", "about": "Listens for shortcuts like Cmd+Z, on the editor and inside the page preview."}, {"id": "history", "name": "Undo history", "about": "The saved copies of your page, and the functions that add and restore them.", "span": 2, "cols": 3}, {"id": "data", "name": "Page data", "about": "The store that holds your page now, and the code that applies each action.", "span": 2, "cols": 3}, {"id": "canvas", "name": "Canvas", "about": "Your page in the editor, where you drag blocks.", "span": 2}], "parts": [{"id": "button", "area": "top", "role": "ctrl", "name": "Undo button", "code": "MenuBar", "file": "components/MenuBar/index.tsx:53", "about": "The curved arrow in the top bar. Clicking it calls the undo function. It turns grey when there is no earlier copy to go back to."}, {"id": "setup", "area": "keys", "role": "ctrl", "name": "Undo shortcuts", "code": "useRegisterHistorySlice", "file": "store/slices/history.ts:184", "about": "When the editor starts, this signs up Cmd+Z and Ctrl+Z for undo. It also signs up Cmd+Shift+Z, Cmd+Y and their Ctrl versions for redo."}, {"id": "listener", "area": "keys", "role": "ctrl", "name": "Shortcut listener", "code": "monitorHotkeys", "file": "lib/use-hotkey.ts:127", "about": "Watches every key you press, in the editor and inside the page preview. When the keys you hold match a signed-up shortcut exactly, it calls that shortcut's function."}, {"id": "recorder", "area": "history", "role": "hist", "name": "Recorder", "code": "record", "file": "store/slices/history.ts:62", "about": "Adds a copy of the page to the undo list. It waits 250 milliseconds first. If another change arrives in that time, it keeps only the newest copy."}, {"id": "list", "area": "history", "role": "hist", "name": "Undo list", "code": "histories + index", "file": "store/slices/history.ts:84", "about": "Every saved copy of the page, oldest first, plus the position of the copy that matches the screen."}, {"id": "back", "area": "history", "role": "hist", "name": "Undo function", "code": "back", "file": "store/slices/history.ts:99", "about": "Takes the copy before the current position, sends it to the page data store, and moves the position back by one."}, {"id": "store", "area": "data", "role": "data", "name": "Page data store", "code": "appStore.dispatch", "file": "store/index.ts:162", "about": "Holds your page now. It changes only when it receives an action. Each action runs through the undo-step check below."}, {"id": "check", "area": "data", "role": "data", "name": "Undo-step check", "code": "storeInterceptor", "file": "reducer/index.ts:32", "about": "Runs after every action. It decides whether to hand a copy of the new page to the recorder. Selecting, dragging and replacing the page save nothing, unless the action asks."}, {"id": "setact", "area": "data", "role": "data", "name": "Replace-page action", "code": "setAction", "file": "reducer/actions/set.ts:7", "about": "The action undo sends. It replaces the page data with the saved copy it receives."}, {"id": "drag", "area": "canvas", "role": "ctrl", "name": "Drag handler", "code": "DragDropContext", "file": "components/DragDropContext/index.tsx:405", "about": "Puck's main drag code. When you drop a block, it sends a move action, then a select action. The select action asks for the undo step."}, {"id": "droparea", "area": "canvas", "role": "draw", "name": "Drop area", "code": "DropZone", "file": "components/DropZone/index.tsx", "about": "The list of blocks on your page. It redraws when the page data store gives it a new order."}], "links": [{"id": "move", "from": "drag", "to": "store", "role": "ctrl", "label": "move, then select"}, {"id": "run", "from": "store", "to": "check", "role": "data", "label": "after every action"}, {"id": "save", "from": "check", "to": "recorder", "role": "hist", "label": "save this copy"}, {"id": "add", "from": "recorder", "to": "list", "role": "hist", "label": "add copy after 250ms"}, {"id": "enable", "from": "list", "to": "button", "role": "hist", "label": "earlier copy? turn on"}, {"id": "signup", "from": "setup", "to": "listener", "role": "ctrl", "label": "signs up Cmd+Z"}, {"id": "key", "from": "listener", "to": "back", "role": "ctrl", "label": "Cmd+Z: go back"}, {"id": "click", "from": "button", "to": "back", "role": "ctrl", "label": "click: go back"}, {"id": "read", "from": "back", "to": "list", "role": "hist", "label": "take earlier copy"}, {"id": "swap", "from": "back", "to": "store", "role": "hist", "label": "replace the page"}, {"id": "apply", "from": "store", "to": "setact", "role": "data", "label": "swap in the copy"}, {"id": "redraw", "from": "store", "to": "droparea", "role": "data", "label": "new order, redraw"}], "areaLinks": [{"from": "top", "to": "history", "label": "click Undo"}, {"from": "keys", "to": "history", "label": "Cmd+Z"}, {"from": "canvas", "to": "data", "label": "move a block"}, {"from": "data", "to": "history", "label": "save copies, restore copies", "both": true}, {"from": "data", "to": "canvas", "label": "redraw"}], "tour": [{"say": "<b>Follow one move, then one undo.<\/b> The page has two blocks: Hero, then Text. Press Next to drag Text above Hero, then press Cmd+Z."}, {"parts": ["drag", "store"], "links": ["move"], "tick": "drop", "say": "You drag Text above Hero and let go. The drag handler sends two actions to the page data store: move Text to position 0, then select Text."}, {"parts": ["store", "check", "recorder"], "links": ["run", "save"], "say": "The undo-step check runs after each action. The move asks for no undo step. The select action asks for one, so the check hands the recorder a full copy of the page."}, {"parts": ["recorder", "list"], "links": ["add"], "say": "The recorder waits 250 milliseconds, then adds the copy to the undo list. The list now holds two copies, and the position points at the newest one."}, {"parts": ["list", "button"], "links": ["enable"], "say": "The Undo button sees a copy before the position, so it turns on."}, {"parts": ["setup", "listener", "back"], "links": ["signup", "key"], "tick": "Cmd+Z", "say": "You press Cmd+Z. The shortcut listener finds the shortcut that Puck signed up at start, and calls the undo function. Clicking the Undo button calls the same function."}, {"parts": ["back", "list"], "links": ["read"], "say": "The undo function takes the copy before the current position: the page as it loaded, with Hero first."}, {"parts": ["back", "store", "check", "setact"], "links": ["swap", "run", "apply"], "say": "The undo function sends that whole copy to the page data store, which replaces the page with it. The check saves no undo step for this action."}, {"parts": ["store", "droparea", "list", "button"], "links": ["redraw"], "say": "The undo function moves the position back to 0. React redraws the page with Hero first. Undo turns grey, and Redo turns on."}]}, {"type": "flow", "id": "flow", "title": "One move and one undo, in order", "intro": "Read top to bottom. Each arrow is one part telling another part something. On the right you see the editor and the data at that moment.", "screenLabel": "What you see", "stateLabel": "Page data and undo list", "lanes": [{"id": "you", "name": "You", "role": "you"}, {"id": "drag", "name": "Drag handler", "role": "ctrl"}, {"id": "keys", "name": "Shortcuts", "role": "ctrl"}, {"id": "undo", "name": "Undo", "role": "hist"}, {"id": "store", "name": "Page data", "role": "data"}, {"id": "list", "name": "Undo list", "role": "hist"}, {"id": "screen", "name": "Screen", "role": "draw"}], "steps": [{"from": "you", "to": "drag", "label": "drop Text above Hero", "phase": "move", "tick": "move", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><div class=\"scr-box\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><\/div><\/div>", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "say": "You drag the Text block up and let go above Hero. The undo list holds one copy: the page as it loaded. The Undo button is grey."}, {"from": "drag", "to": "store", "label": "move Text to position 0", "state": {"page · order": "Text-2, Hero-1", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "say": "When the block finishes gliding, the drag handler sends a move action: take the block at position 1, put it at position 0. The action says to save no undo step."}, {"from": "store", "to": "screen", "label": "redraw: Text, Hero", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-hot\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box scr-hot\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "say": "The page data store applies the move. React redraws the page with Text first. The undo list has not changed yet."}, {"from": "drag", "to": "store", "label": "select Text, save a step", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "state": {"page · order": "Text-2, Hero-1", "page · selected": "Text-2", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "say": "Right away, the drag handler sends a second action: select Text and end the drag. <b>This action asks the store to save an undo step.<\/b>"}, {"from": "store", "to": "list", "label": "copy of the page", "say": "The store hands the recorder a full copy of the page data: Text first, Text selected. The recorder waits 250 milliseconds, in case another change follows."}, {"from": "list", "to": "list", "label": "250ms later: add copy", "tick": "saved", "state": {"page · order": "Text-2, Hero-1", "page · selected": "Text-2", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 1}, "say": "No other change came, so the recorder adds the copy to the undo list. The list holds two copies now. The position moves to 1, the newest copy."}, {"from": "list", "to": "screen", "label": "Undo turns on", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-hot\">↶ Undo<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "say": "The Undo button checks the position. Position 1 has a copy before it, so the button turns on."}, {"from": "you", "to": "keys", "label": "press Cmd+Z", "phase": "undo", "tick": "Cmd+Z", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box\">↶ Undo<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "say": "You press Cmd+Z. On Windows and Linux, Ctrl+Z does the same. Clicking the Undo button would call the same undo function directly."}, {"from": "keys", "to": "undo", "label": "call the undo function", "say": "The shortcut listener compares the keys you hold with the shortcuts Puck signed up at start. Cmd+Z matches, so it calls the undo function, <code>back<\/code>."}, {"from": "undo", "to": "list", "label": "take copy 0", "say": "The undo function checks the position. The position is 1, so a copy exists before it. It takes copy 0: the page as it loaded, with Hero first and nothing selected."}, {"from": "undo", "to": "store", "label": "replace page with copy 0", "tick": "swap", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 1}, "say": "The undo function sends the whole copy to the page data store, as a <code>set<\/code> action. The store replaces the page data with it. <b>Undo never works out how to reverse the move.<\/b>"}, {"from": "store", "to": "store", "label": "no undo step for this", "say": "The store's undo-step check sees a <code>set<\/code> action. That kind of action never saves an undo step, so the undo list stays the same."}, {"from": "undo", "to": "list", "label": "position back to 0", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 0}, "say": "The undo function moves the position back by one, to 0. Copy 1, with Text first, stays in the list so Redo can bring it back."}, {"from": "store", "to": "screen", "label": "redraw: Hero, Text", "tick": "done", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box\">↷ Redo<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-hot\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><div class=\"scr-box scr-hot\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><\/div><\/div>", "say": "React redraws the page with Hero first and no block selected. Undo turns grey, because no copy comes before position 0. Redo turns on."}]}, {"type": "trace", "id": "save", "title": "How the move saved an undo step", "intro": "This zooms into steps 2 to 6 above. Step through the real code that runs after you drop Text. One step asks you to guess first.", "screenLabel": "What you see", "stateLabel": "Page data and undo list", "files": {"dnd": {"path": "packages/core/components/DragDropContext/index.tsx", "start": 441, "code": "            // Finalise the drag\n            if (thisPreview) {\n              zoneStore.setState({ previewIndex: {} });\n\n              if (thisPreview.type === \"insert\") {\n                insertComponent(\n                  thisPreview.componentType,\n                  thisPreview.zone,\n                  thisPreview.index,\n                  appStore\n                );\n              } else if (initialSelector.current) {\n                moveComponent(\n                  thisPreview.props.id,\n                  initialSelector.current,\n                  { ...thisPreview, index: commitIndex },\n                  appStore\n                );\n              }\n\n              playCommitFlip?.();\n            }\n\n            const movedToNewPosition =\n              initialSelector.current?.zone !== thisPreview?.zone ||\n              initialSelector.current?.index !== commitIndex;\n\n            dispatch({\n              type: \"setUi\",\n              ui: {\n                itemSelector: thisPreview\n                  ? { index: commitIndex, zone: thisPreview.zone }\n                  : { index, zone },\n                isDragging: false,\n              },\n              recordHistory: movedToNewPosition,\n            });"}, "mc": {"path": "packages/core/lib/move-component.ts", "start": 15, "code": "export const moveComponent = async (\n  id: string,\n  sourceSelector: ItemSelector,\n  destinationSelector: ItemSelector,\n  appStore: ReturnType<typeof useAppStoreApi>\n) => {\n  const dispatch = appStore.getState().dispatch;\n  dispatch({\n    type: \"move\",\n    sourceIndex: sourceSelector.index,\n    sourceZone: sourceSelector.zone ?? rootDroppableId,\n    destinationIndex: destinationSelector.index,\n    destinationZone: destinationSelector.zone ?? rootDroppableId,\n    recordHistory: false,\n  });\n\n  const componentData = appStore.getState().state.indexes.nodes[id]?.data;\n  if (!componentData) return;\n\n  await resolveAndReplaceData(componentData, appStore.getState, \"move\");\n};"}, "red": {"path": "packages/core/reducer/index.ts", "start": 32, "code": "function storeInterceptor<UserData extends Data = Data>(\n  reducer: StateReducer<UserData>,\n  record?: (appState: AppState<UserData>) => void,\n  onAction?: OnAction<UserData>\n) {\n  return (\n    state: PrivateAppState<UserData>,\n    action: PuckAction\n  ): PrivateAppState<UserData> => {\n    const newAppState = reducer(state, action);\n\n    const isValidType = ![\n      \"registerZone\",\n      \"unregisterZone\",\n      \"setData\",\n      \"setUi\",\n      \"set\",\n    ].includes(action.type);\n\n    if (\n      typeof action.recordHistory !== \"undefined\"\n        ? action.recordHistory\n        : isValidType\n    ) {\n      if (record) record(newAppState);\n    }\n\n    onAction?.(action, makeStatePublic(newAppState), makeStatePublic(state));\n\n    return newAppState;\n  };\n}"}, "rec": {"path": "packages/core/store/slices/history.ts", "start": 62, "code": "  const record = debounce((state: AppState) => {\n    const { histories, index } = get().history;\n\n    const history: History = {\n      state,\n      id: generateId(\"history\"),\n    };\n\n    // Don't use setHistories due to callback\n    const newHistories = [...histories.slice(0, index + 1), history];\n\n    set({\n      history: {\n        ...get().history,\n        histories: newHistories,\n        index: newHistories.length - 1,\n      },\n    });\n  }, 250);"}}, "frames": {"end": {"name": "onAnimationEnd", "about": "drag handler, after the glide", "role": "ctrl"}, "mc": {"name": "moveComponent", "about": "moves a block", "role": "ctrl"}, "disp": {"name": "dispatch", "about": "the store receives an action", "role": "data"}, "red": {"name": "storeInterceptor", "about": "the undo-step check", "role": "data"}, "rec": {"name": "record", "about": "the recorder", "role": "hist"}}, "steps": [{"file": "dnd", "line": 452, "to": 458, "stack": ["end"], "vars": {"thisPreview.props.id": "\"Text-2\"", "initialSelector.current": "{ zone: \"root:default-zone\", index: 1 }", "commitIndex": "0"}, "tick": "drop", "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><div class=\"scr-box\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><\/div><\/div>", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "say": "Text has finished gliding above Hero. The drag handler calls <code>moveComponent<\/code> with Text's id, where it was (position 1) and where it goes (position 0).", "log": [{"role": "ctrl", "text": "Drop finished. Moving Text-2 from position 1 to position 0."}]}, {"file": "mc", "line": 22, "to": 29, "stack": ["end", "mc"], "vars": {"id": "\"Text-2\"", "sourceSelector": "{ zone: main list, index: 1 }", "destinationSelector": "{ zone: main list, index: 0 }"}, "say": "<code>moveComponent<\/code> sends the store a move action: take the block at position 1, put it at position 0. <code>recordHistory: false<\/code> tells the store to save no undo step.", "ask": {"q": "The move action says to save no undo step. Can you still undo the move?", "options": ["No. Undo will skip the move and go back further.", "Yes. The store saves a step for every move anyway.", "Yes. Another action, sent right after, saves the step."], "answer": 2, "why": "Yes, through another action. Right after the move, the drag handler sends a select action that asks for an undo step. The copy it saves already has the move in it."}}, {"file": "red", "line": 51, "to": 57, "stack": ["end", "mc", "disp", "red"], "vars": {"action.type": "\"move\"", "action.recordHistory": "false", "newAppState": "order: Text-2, Hero-1"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-hot\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box scr-hot\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "state": {"page · order": "Text-2, Hero-1", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "say": "Inside the store, the undo-step check runs after the move. The move asked for no undo step, so the check skips the recorder. The page data now has Text first.", "log": [{"role": "data", "text": "Moved Text-2 to position 0. No undo step saved."}, {"role": "draw", "text": "Page redrew: Text, Hero."}]}, {"file": "dnd", "line": 464, "to": 466, "stack": ["end"], "vars": {"thisPreview.props.id": "\"Text-2\"", "initialSelector.current": "{ zone: \"root:default-zone\", index: 1 }", "commitIndex": "0", "movedToNewPosition": "true"}, "say": "Back in the drag handler. It checks whether the block landed somewhere new. Same list, but position 0 instead of 1, so <code>movedToNewPosition<\/code> is true."}, {"file": "dnd", "line": 468, "to": 477, "stack": ["end"], "vars": {"thisPreview.props.id": "\"Text-2\"", "initialSelector.current": "{ zone: \"root:default-zone\", index: 1 }", "commitIndex": "0", "movedToNewPosition": "true"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "state": {"page · order": "Text-2, Hero-1", "page · selected": "Text-2", "undo list · copies": "0: Hero-1, Text-2", "undo list · position": 0}, "tick": "the step", "say": "The drag handler sends a second action: select Text and end the drag. <b>This action asks for the undo step<\/b>, because its <code>recordHistory<\/code> is true.", "log": [{"role": "ctrl", "text": "Selected Text-2 and asked for an undo step."}]}, {"file": "red", "line": 51, "to": 57, "stack": ["end", "disp", "red"], "vars": {"action.type": "\"setUi\"", "action.recordHistory": "true", "newAppState": "order: Text-2, Hero-1 · selected: Text-2"}, "say": "The undo-step check sees <code>recordHistory<\/code> is true. So it calls <code>record<\/code> with the new page data: Text first, Text selected.", "log": [{"role": "hist", "text": "Asked the recorder to save a copy."}]}, {"file": "rec", "line": 62, "stack": ["end", "disp", "red", "rec"], "vars": {"state": "order: Text-2, Hero-1 · selected: Text-2"}, "say": "<code>record<\/code> does not save right away. It waits 250 milliseconds (line 80). If another saving action comes first, it restarts the wait and keeps only the newest copy."}, {"file": "rec", "line": 63, "to": 71, "stack": ["rec"], "tick": "250ms later", "vars": {"state": "order: Text-2, Hero-1 · selected: Text-2", "histories": "[copy 0]", "index": "0", "newHistories": "[copy 0, copy 1]"}, "say": "250 milliseconds later, the recorder reads the undo list and the position, 0. It keeps every copy up to the position, then adds the new copy after them."}, {"file": "rec", "line": 73, "to": 79, "stack": ["rec"], "vars": {"state": "order: Text-2, Hero-1 · selected: Text-2", "histories": "[copy 0]", "index": "0", "newHistories": "[copy 0, copy 1]"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-hot\">↶ Undo<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "state": {"page · order": "Text-2, Hero-1", "page · selected": "Text-2", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 1}, "say": "The recorder saves the longer list and moves the position to 1, the new copy. The Undo button sees a copy before position 1, so it turns on.", "log": [{"role": "hist", "text": "Saved copy 1 (Text-2, Hero-1). Position is now 1."}, {"role": "draw", "text": "Undo button turned on."}]}]}, {"type": "trace", "id": "undo", "title": "Undo, line by line", "intro": "This zooms into steps 8 to 14 of the timeline: what runs when you press Cmd+Z. Two steps ask you to guess first.", "screenLabel": "What you see", "stateLabel": "Page data and undo list", "files": {"hk": {"path": "packages/core/store/slices/history.ts", "start": 176, "code": "  const back = () => {\n    appStore.getState().history.back();\n  };\n\n  const forward = () => {\n    appStore.getState().history.forward();\n  };\n\n  useHotkey({ altRight: false, meta: true, z: true }, back);\n  useHotkey({ altRight: false, meta: true, shift: true, z: true }, forward);\n  useHotkey({ altRight: false, meta: true, y: true }, forward);\n\n  useHotkey({ altRight: false, ctrl: true, z: true }, back);\n  useHotkey({ altRight: false, ctrl: true, shift: true, z: true }, forward);\n  useHotkey({ altRight: false, ctrl: true, y: true }, forward);"}, "sl": {"path": "packages/core/store/slices/history.ts", "start": 86, "code": "    hasPast: () => get().history.index > EMPTY_HISTORY_INDEX,\n    hasFuture: () => get().history.index < get().history.histories.length - 1,\n    prevHistory: () => {\n      const { history } = get();\n\n      return history.hasPast() ? history.histories[history.index - 1] : null;\n    },\n    nextHistory: () => {\n      const s = get().history;\n\n      return s.hasFuture() ? s.histories[s.index + 1] : null;\n    },\n    currentHistory: () => get().history.histories[get().history.index],\n    back: () => {\n      const { history, dispatch } = get();\n\n      if (history.hasPast()) {\n        const state = tidyState(\n          history.prevHistory()?.state || history.initialAppState\n        );\n\n        dispatch({\n          type: \"set\",\n          state,\n        });\n\n        set({ history: { ...history, index: history.index - 1 } });\n      }\n    },"}, "td": {"path": "packages/core/store/slices/history.ts", "start": 44, "code": "// Tidy the state before going back or forward\nconst tidyState = (state: AppState): AppState => {\n  return {\n    ...state,\n    ui: {\n      ...state.ui,\n      field: {\n        ...state.ui.field,\n        focus: null,\n      },\n    },\n  };\n};"}, "st": {"path": "packages/core/store/index.ts", "start": 162, "code": "      dispatch: (action: PuckAction) =>\n        set((s) => {\n          const { record } = get().history;\n\n          const dispatch = createReducer({\n            record,\n            appStore: s,\n          });\n\n          const state = dispatch(s.state, action);\n\n          const selectedItem = state.ui.itemSelector\n            ? getItem(state.ui.itemSelector, state)\n            : null;\n\n          get().onAction?.(action, state, get().state);\n\n          return { ...s, state, selectedItem };\n        }),"}, "red": {"path": "packages/core/reducer/index.ts", "start": 32, "code": "function storeInterceptor<UserData extends Data = Data>(\n  reducer: StateReducer<UserData>,\n  record?: (appState: AppState<UserData>) => void,\n  onAction?: OnAction<UserData>\n) {\n  return (\n    state: PrivateAppState<UserData>,\n    action: PuckAction\n  ): PrivateAppState<UserData> => {\n    const newAppState = reducer(state, action);\n\n    const isValidType = ![\n      \"registerZone\",\n      \"unregisterZone\",\n      \"setData\",\n      \"setUi\",\n      \"set\",\n    ].includes(action.type);\n\n    if (\n      typeof action.recordHistory !== \"undefined\"\n        ? action.recordHistory\n        : isValidType\n    ) {\n      if (record) record(newAppState);\n    }\n\n    onAction?.(action, makeStatePublic(newAppState), makeStatePublic(state));\n\n    return newAppState;\n  };\n}"}, "set": {"path": "packages/core/reducer/actions/set.ts", "start": 7, "code": "export const setAction = <UserData extends Data>(\n  state: PrivateAppState<UserData>,\n  action: SetAction<UserData>,\n  appStore: AppStore\n): PrivateAppState<UserData> => {\n  if (typeof action.state === \"object\") {\n    const newState = {\n      ...state,\n      ...action.state,\n    };\n\n    if (action.state.indexes) {\n      return newState;\n    }\n\n    console.warn(\n      \"`set` is expensive and may cause unnecessary re-renders. Consider using a more atomic action instead.\"\n    );\n\n    return walkAppState(newState, appStore.config);\n  }\n\n  return { ...state, ...action.state(state) };\n};"}}, "frames": {"keys": {"name": "onKeyDown", "about": "the shortcut listener", "role": "ctrl"}, "wrap": {"name": "back (Cmd+Z)", "about": "the undo shortcut", "role": "ctrl"}, "back": {"name": "history.back", "about": "the undo function", "role": "hist"}, "hp": {"name": "hasPast", "about": "is there an earlier copy?", "role": "hist"}, "prev": {"name": "prevHistory", "about": "gets the earlier copy", "role": "hist"}, "tidy": {"name": "tidyState", "about": "clears the typing cursor", "role": "hist"}, "disp": {"name": "dispatch", "about": "the store receives an action", "role": "data"}, "red": {"name": "storeInterceptor", "about": "the undo-step check", "role": "data"}, "set": {"name": "setAction", "about": "replaces the page data", "role": "data"}}, "steps": [{"file": "hk", "line": 184, "stack": ["keys"], "tick": "Cmd+Z", "vars": {"keys held": "Cmd + Z"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box\">↶ Undo<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-sel\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><\/div><\/div>", "state": {"page · order": "Text-2, Hero-1", "page · selected": "Text-2", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 1}, "say": "You press Cmd+Z. When the editor started, this line signed up Cmd+Z for undo. The shortcut listener sees an exact match and calls <code>back<\/code>. Line 188 does the same for Ctrl+Z.", "log": [{"role": "you", "text": "Pressed Cmd+Z."}]}, {"file": "hk", "line": 176, "to": 178, "stack": ["keys", "wrap"], "say": "This small function gets the undo function from the page data store and calls it. The Undo button in the top bar calls the same undo function."}, {"file": "sl", "line": 99, "to": 100, "stack": ["keys", "wrap", "back"], "vars": {"history.index": "1", "history.histories": "[copy 0: Hero-1, Text-2 · copy 1: Text-2, Hero-1]", "dispatch": "the store's dispatch"}, "say": "The undo function reads the undo list and the store's <code>dispatch<\/code>. The position is 1. Copy 1 has Text first, which matches the screen."}, {"file": "sl", "line": 86, "stack": ["keys", "wrap", "back", "hp"], "vars": {"history.index": "1", "returns": "true"}, "say": "<code>hasPast<\/code> checks whether the position is above 0. The position is 1, so the answer is yes. On a freshly opened page the position is 0, so the Undo button starts grey."}, {"file": "sl", "line": 88, "to": 92, "stack": ["keys", "wrap", "back", "prev"], "vars": {"history.index": "1", "returns": "copy 0: Hero-1, Text-2 · nothing selected"}, "say": "<code>prevHistory<\/code> returns the copy one before the position: copy 0. Copy 0 is the page as it loaded, with Hero first and nothing selected."}, {"file": "td", "line": 45, "to": 56, "stack": ["keys", "wrap", "back", "tidy"], "vars": {"state": "copy 0", "returns": "copy 0, with no settings box focused"}, "say": "<code>tidyState<\/code> makes a fresh copy of copy 0 with one change. It clears which settings box had the typing cursor. Everything else stays as saved."}, {"file": "sl", "line": 103, "to": 105, "stack": ["keys", "wrap", "back"], "vars": {"history.index": "1", "history.histories": "[copy 0: Hero-1, Text-2 · copy 1: Text-2, Hero-1]", "dispatch": "the store's dispatch", "state": "copy 0, tidied: Hero-1, Text-2 · nothing selected"}, "say": "Back in the undo function. Its variable <code>state<\/code> now holds the page as it loaded. The screen still shows Text first.", "ask": {"q": "The undo function has the earlier copy. What does it send to the page data store next?", "options": ["An action that moves Text back to position 1", "The whole saved copy, to replace the current page", "A list of the changes to reverse"], "answer": 1, "why": "The whole copy. Puck's undo list holds full copies of the page, not changes. Undo swaps in the copy before the current one. The same code undoes a move, a delete or a typed letter."}}, {"file": "sl", "line": 107, "to": 110, "stack": ["keys", "wrap", "back"], "vars": {"history.index": "1", "history.histories": "[copy 0: Hero-1, Text-2 · copy 1: Text-2, Hero-1]", "dispatch": "the store's dispatch", "state": "copy 0, tidied: Hero-1, Text-2 · nothing selected"}, "tick": "swap", "say": "The undo function sends the copy to the store as a <code>set<\/code> action. A set action means: replace the page data with this.", "log": [{"role": "hist", "text": "Sent copy 0 to the page data store."}]}, {"file": "st", "line": 164, "to": 171, "stack": ["keys", "wrap", "back", "disp"], "vars": {"action": "{ type: \"set\", state: copy 0 }", "s.state": "order: Text-2, Hero-1 · selected: Text-2"}, "say": "Inside the page data store. It builds the code that applies actions and gives it <code>record<\/code>, the recorder. Then it runs the set action on the current page."}, {"file": "set", "line": 12, "to": 19, "stack": ["keys", "wrap", "back", "disp", "red", "set"], "vars": {"action.state": "copy 0", "newState": "order: Hero-1, Text-2 · selected: none"}, "say": "The set action lays copy 0 over the current page data. Copy 0 also carries Puck's lookup table of every block. So the action returns the result without rebuilding that table."}, {"file": "red", "line": 43, "to": 57, "stack": ["keys", "wrap", "back", "disp", "red"], "vars": {"action.type": "\"set\"", "action.recordHistory": "not given", "isValidType": "false"}, "say": "The undo-step check runs, as it does after every action. The undo function gave no <code>recordHistory<\/code>, so the check uses its list of actions that never save.", "ask": {"q": "The page data has changed. Will the check save a new undo step?", "options": ["Yes. Every change to the page saves a step.", "No. A set action is on the list that never saves one.", "Only if the page looks different from before."], "answer": 1, "why": "No. <code>set<\/code> is on the list at lines 44 to 48, so the recorder never runs. Otherwise each undo would add a new copy to the list it is walking back through."}}, {"file": "st", "line": 173, "to": 179, "stack": ["keys", "wrap", "back", "disp"], "vars": {"action": "{ type: \"set\", state: copy 0 }", "state": "order: Hero-1, Text-2 · selected: none", "selectedItem": "null (nothing selected)"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box\">↶ Undo<\/div><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↷ Redo · off<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box scr-hot\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><div class=\"scr-box scr-hot\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><\/div><\/div>", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 1}, "tick": "on screen", "say": "The store works out the selected block from the copy: none. It swaps in the new page data. <b>React redraws the page with Hero first<\/b>, and the selection outline goes away.", "log": [{"role": "data", "text": "Page data replaced with copy 0. No undo step saved."}, {"role": "draw", "text": "Page redrew: Hero, Text."}]}, {"file": "sl", "line": 112, "stack": ["keys", "wrap", "back"], "vars": {"history.index": "0", "history.histories": "[copy 0: Hero-1, Text-2 · copy 1: Text-2, Hero-1]", "dispatch": "the store's dispatch", "state": "copy 0, tidied: Hero-1, Text-2 · nothing selected"}, "screen": "<div class=\"scr-col\"><div class=\"scr-row\"><span class=\"scr-tag\">TOP BAR<\/span><div class=\"scr-box scr-muted\" style=\"opacity:.5\">↶ Undo · off<\/div><div class=\"scr-box scr-hot\">↷ Redo<\/div><\/div><div class=\"scr-col\"><span class=\"scr-tag\">PAGE<\/span><div class=\"scr-box\">Hero <span class=\"scr-tag\">Hero-1<\/span><\/div><div class=\"scr-box\">Text block <span class=\"scr-tag\">Text-2<\/span><\/div><\/div><\/div>", "state": {"page · order": "Hero-1, Text-2", "page · selected": "none", "undo list · copies": "0: Hero-1, Text-2 · 1: Text-2, Hero-1", "undo list · position": 0}, "tick": "done", "say": "Last, the undo function moves the position back by one, to 0. Undo turns grey, because no copy comes before 0. Redo turns on, because copy 1 is still in the list.", "log": [{"role": "hist", "text": "Position moved to 0. Copy 1 kept for Redo."}, {"role": "draw", "text": "Undo button off, Redo button on."}]}]}, {"type": "text", "id": "next", "title": "Redo, and what wipes it out", "body": ["Redo works the same way in the other direction. Cmd+Shift+Z, Cmd+Y or the Redo button call <code>forward<\/code>. That function swaps in the copy after the position and moves the position up by one.", "If you make a new change instead of pressing Redo, the recorder keeps the copies up to the position and drops the rest. Copy 1 disappears, and Redo turns grey."]}], "takeaway": "Puck saves a full copy of your page after each change you can undo. Undo puts the previous copy back and moves a position number back by one. It never works out how to reverse the change.", "footer": "Built with code-slowmo. Code is copied from Puck 0.23.0, commit 574471f5. The block ids Hero-1 and Text-2 are made-up examples."}</script>
+<script>
+(() => {
+const P = JSON.parse(document.getElementById("page-data").textContent);
+const NS = "http://www.w3.org/2000/svg";
+const $ = (s, r=document) => r.querySelector(s);
+const SVGT = new Set(["svg","g","rect","text","path","line","circle","polygon","tspan"]);
+function el(tag, attrs={}, parent, text){
+  const e = SVGT.has(tag) ? document.createElementNS(NS, tag) : document.createElement(tag);
+  for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ── roles: up to 5 named colors, fixed for the whole page ── */
+const ROLES = {}; (P.roles||[]).forEach((r,i) => ROLES[r.id] = { ...r, n: i+1 });
+const rc = id => ROLES[id] ? `var(--r${ROLES[id].n})` : "var(--r0)";
+const rbg = id => ROLES[id] ? `var(--r${ROLES[id].n}-bg)` : "var(--r0-bg)";
+const roleStyle = id => `--c:${rc(id)};--cbg:${rbg(id)}`;
+
+/* ── prose: authors write a tiny HTML subset; code terms get hover explanations ── */
+const TERMS = P.terms || {};
+function prose(html){
+  if (html == null) return "";
+  let s = String(html);
+  s = s.replace(/<span class="role" data-role="([\w-]+)">/g, (m,id) => `<span class="role" style="${roleStyle(id)}">`);
+  s = s.replace(/<code>([\s\S]*?)<\/code>/g, (m, inner) => {
+    const key = inner.replace(/<[^>]+>/g,"").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&");
+    const t = TERMS[key];
+    return t ? `<code class="term" tabindex="0" data-term="${esc(key)}">${inner}</code>` : m;
+  });
+  return s;
+}
+const tip = $("#tip");
+function showTip(target){
+  const key = target.dataset.term; if (!key || !TERMS[key]) return;
+  tip.innerHTML = `<b>${esc(key)}</b>${esc(TERMS[key])}`; tip.hidden = false;
+  const r = target.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = Math.min(window.innerWidth - tw - 8, Math.max(8, r.left));
+  let y = r.bottom + 8; if (y + th > window.innerHeight - 8) y = r.top - th - 8;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+document.addEventListener("mouseover", e => { const t = e.target.closest?.("code.term"); if (t) showTip(t); });
+document.addEventListener("mouseout", e => { if (e.target.closest?.("code.term")) tip.hidden = true; });
+document.addEventListener("focusin", e => { if (e.target.matches?.("code.term")) showTip(e.target); });
+document.addEventListener("focusout", e => { if (e.target.matches?.("code.term")) tip.hidden = true; });
+window.addEventListener("scroll", () => { tip.hidden = true; }, { passive:true });
+
+/* ── shared step player ── */
+const ICON = {
+  first:'<svg viewBox="0 0 16 16"><path d="M3 3v10M13 3L6 8l7 5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  prev:'<svg viewBox="0 0 16 16"><path d="M11 3L4 8l7 5z" fill="currentColor"/></svg>',
+  next:'<svg viewBox="0 0 16 16"><path d="M5 3l7 5-7 5z" fill="currentColor"/></svg>',
+  play:'<svg viewBox="0 0 16 16"><path d="M4 2.5l9 5.5-9 5.5z" fill="currentColor"/></svg>',
+  pause:'<svg viewBox="0 0 16 16"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor"/></svg>'
+};
+let activePlayer = null;
+const players = {};
+function makePlayer(mount, { count, render, ticks = {}, key }){
+  let i = 0, timer = null, speed = 1;
+  mount.innerHTML = `<div class="transport">
+    <button class="tbtn" data-a="first" aria-label="Back to the first step">${ICON.first}</button>
+    <button class="tbtn" data-a="prev" aria-label="Previous step">${ICON.prev}</button>
+    <button class="tbtn primary" data-a="next" aria-label="Next step">Next ${ICON.next}</button>
+    <button class="tbtn" data-a="play" aria-label="Play">${ICON.play}</button>
+    <span class="count"></span>
+    <div class="scrub"><div class="track"></div><div class="fill"></div><div class="ticks"></div><div class="knob"></div>
+      <input type="range" min="0" max="${Math.max(0,count-1)}" value="0" aria-label="Jump to a step"></div>
+    <label class="speed">Speed <select aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+  </div>`;
+  const q = s => mount.querySelector(s);
+  const range = q("input"), fill = q(".fill"), knob = q(".knob"), cnt = q(".count"), playBtn = q('[data-a="play"]');
+  Object.entries(ticks).forEach(([at, label]) => {
+    const t = el("span", { class:"tick" }, q(".ticks"), label);
+    t.style.left = (count > 1 ? at/(count-1)*100 : 0) + "%";
+    if (+at === 0) t.classList.add("first"); if (+at === count-1) t.classList.add("last");
+  });
+  const pct = () => (count > 1 ? i/(count-1)*100 : 0) + "%";
+  function go(n, fromUser = true){
+    i = Math.max(0, Math.min(count-1, n));
+    range.value = i; fill.style.width = pct(); knob.style.left = pct();
+    cnt.textContent = `Step ${i+1} / ${count}`;
+    render(i);
+    if (key && fromUser) { try { history.replaceState(null, "", "#" + key + "-" + (i+1)); } catch(e){} }
+    if (i === count-1) stop();
+  }
+  function stop(){ clearInterval(timer); timer = null; playBtn.innerHTML = ICON.play; playBtn.setAttribute("aria-label","Play"); }
+  function play(){
+    if (timer) return stop();
+    if (i === count-1) go(0);
+    playBtn.innerHTML = ICON.pause; playBtn.setAttribute("aria-label","Pause");
+    timer = setInterval(() => go(i+1), 2200/speed);
+  }
+  mount.addEventListener("click", e => {
+    const a = e.target.closest("[data-a]")?.dataset.a; if (!a) return;
+    activePlayer = api;
+    if (a==="first"){ stop(); go(0); } if (a==="prev"){ stop(); go(i-1); }
+    if (a==="next"){ stop(); go(i+1); } if (a==="play") play();
+  });
+  range.addEventListener("input", () => { stop(); activePlayer = api; go(+range.value); });
+  q("select").addEventListener("change", e => { speed = +e.target.value; if (timer){ stop(); play(); } });
+  const api = { go, stop, play, get i(){ return i; } };
+  mount.closest(".demo")?.addEventListener("pointerdown", () => { activePlayer = api; });
+  if (key) players[key] = api;
+  go(0, false);
+  return api;
+}
+document.addEventListener("keydown", e => {
+  if (!activePlayer || e.target.closest("input,select,textarea")) return;
+  if (e.key==="ArrowRight"){ e.preventDefault(); activePlayer.stop(); activePlayer.go(activePlayer.i+1); }
+  if (e.key==="ArrowLeft"){ e.preventDefault(); activePlayer.stop(); activePlayer.go(activePlayer.i-1); }
+  if (e.key===" " && !e.target.closest("button")){ e.preventDefault(); activePlayer.play(); }
+  if (e.key==="Home"){ e.preventDefault(); activePlayer.stop(); activePlayer.go(0); }
+});
+
+/* ── state readout with automatic "just changed" highlight ── */
+function stateHTML(state, prev){
+  if (!state) return "";
+  return `<div class="state">${Object.entries(state).map(([k,v]) => {
+    const changed = prev && JSON.stringify(prev[k]) !== JSON.stringify(v);
+    return `<span class="sk">${esc(k)}</span><span class="sv${changed?" chg":""}">${prose(typeof v === "string" ? v : esc(JSON.stringify(v)))}</span>`;
+  }).join("")}</div>`;
+}
+function screenHTML(screen, label){
+  if (!screen) return "";
+  return `<div><div class="screen-label">${esc(label || "What you see")}</div><div class="screen">${screen}</div></div>`;
+}
+/* carry the last defined screen/state forward so a step can omit them */
+function carry(steps, field){ let last = null; return steps.map(s => (s[field] != null ? (last = s[field]) : last)); }
+
+/* ── page shell ── */
+const app = $("#app");
+const sections = P.sections || [];
+const secId = (s, i) => s.id || `${s.type}${i+1}`;
+const head = el("header", { class:"top col" }, app);
+head.innerHTML = `
+  ${P.eyebrow ? `<div class="eyebrow">${esc(P.eyebrow)}</div>` : ""}
+  <h1>${esc(P.title)}</h1>
+  ${P.question ? `<p class="question">${prose(P.question)}</p>` : ""}
+  ${P.intro ? `<div class="lede">${[].concat(P.intro).map(p => `<p>${prose(p)}</p>`).join("")}</div>` : ""}
+  ${P.subject ? `<p class="subject">${esc(P.subject)}</p>` : ""}
+  ${(P.roles||[]).length ? `<div class="legend">${P.roles.map(r => `<span style="${roleStyle(r.id)}"><i></i><b>${esc(r.name)}</b>${r.about ? `<em>${prose(r.about)}</em>` : ""}</span>`).join("")}</div>` : ""}
+  ${sections.length > 1 ? `<nav class="toc" aria-label="On this page">${sections.map((s,i) => `<a href="#${secId(s,i)}"><span>${String(i+1).padStart(2,"0")}</span>${esc(s.title || s.type)}</a>`).join("")}</nav>` : ""}`;
+
+function sectionHead(s, i, eyebrowFallback){
+  const sec = el("section", { class:"sec stage", id: secId(s,i) }, app);
+  const h = el("div", { class:"col" }, sec);
+  h.innerHTML = `<div class="eyebrow">${esc(s.eyebrow || eyebrowFallback)}</div><h2>${esc(s.title || "")}</h2>${s.intro ? `<div class="lede">${[].concat(s.intro).map(p => `<p>${prose(p)}</p>`).join("")}</div>` : ""}`;
+  return sec;
+}
+
+/* ═════ glossary ═════ */
+function renderGlossary(s, i){
+  const sec = sectionHead(s, i, "Words you need first");
+  const g = el("div", { class:"gloss" }, sec);
+  (s.items||[]).forEach(it => {
+    const c = el("div", { class:"gcard", style: it.role ? `border-top:3px solid ${rc(it.role)}` : null }, g);
+    c.innerHTML = `<b>${esc(it.word)}</b>${it.code ? `<span class="code">in the code: ${esc(it.code)}</span>` : ""}<p>${prose(it.meaning)}</p>${it.example ? `<div class="ex">${prose(it.example)}</div>` : ""}`;
+  });
+}
+
+/* ═════ text ═════ */
+function renderText(s, i){
+  const sec = sectionHead(s, i, "");
+  const b = el("div", { class:"prose col" }, sec);
+  b.innerHTML = [].concat(s.body||[]).map(p => `<p>${prose(p)}</p>`).join("");
+}
+
+/* ═════ custom (escape hatch for hand-built figures) ═════ */
+function renderCustom(s, i){
+  const sec = sectionHead(s, i, "");
+  const box = el("div", { class: s.frame === false ? "custom" : "demo custom" }, sec);
+  box.innerHTML = s.html || "";
+  if (s.script) { try { new Function("root", "helpers", s.script)(box, { el, esc, prose, makePlayer, rc, rbg, roleStyle, stateHTML }); } catch (e) { console.error("custom section script failed", e); } }
+}
+
+/* ═════ map: areas → parts → links, with a guided tour ═════ */
+function renderMap(s, i){
+  const sec = sectionHead(s, i, "Zoom 1 · the whole system");
+  const key = secId(s, i);
+  const demo = el("div", { class:"demo" }, sec);
+  demo.innerHTML = `<div class="demo-head"><div class="seg" role="group" aria-label="How much detail"><button data-z="areas" aria-pressed="true">Areas</button><button data-z="parts" aria-pressed="false">Parts</button></div><span class="t">${esc(s.note || "")}</span></div>
+    <div class="map-wrap"><div class="map scroll-x"></div><aside class="side" aria-live="polite"></aside></div><div class="tr"></div>`;
+  const side = $(".side", demo);
+  const areas = s.areas || [], parts = s.parts || [], links = s.links || [];
+  const W = 1000, PAD = 20, GAP = 22, ROWGAP = 64, PH = 56, PGAP = 14, LABEL = 34;
+  const rows = s.rows || (() => { const r = []; for (let k = 0; k < areas.length; k += 3) r.push(areas.slice(k, k+3).map(a => a.id)); return r; })();
+  const A = Object.fromEntries(areas.map(a => [a.id, { ...a }]));
+  const partsIn = id => parts.filter(p => p.area === id);
+  let y = PAD;
+  rows.forEach(row => {
+    const spans = row.map(id => A[id].span || 1), tot = spans.reduce((a,b)=>a+b,0);
+    const avail = W - PAD*2 - GAP*(row.length-1);
+    let x = PAD, rowH = 0;
+    row.forEach((id, k) => {
+      const a = A[id]; a.x = x; a.w = avail*spans[k]/tot; a.y = y;
+      const n = partsIn(id).length;
+      a.cols = a.cols || Math.max(1, Math.min(n, Math.floor((a.w - 24) / 190))) || 1;
+      const prow = Math.max(1, Math.ceil(n / a.cols));
+      a.h = Math.max(96, LABEL + prow*PH + (prow-1)*PGAP + 18);
+      rowH = Math.max(rowH, a.h); x += a.w + GAP;
+    });
+    row.forEach(id => A[id].h = rowH);
+    y += rowH + ROWGAP;
+  });
+  const H = y - ROWGAP + PAD;
+  const B = {};
+  areas.forEach(a0 => {
+    const a = A[a0.id], ps = partsIn(a.id);
+    const pw = (a.w - 24 - (a.cols-1)*PGAP) / a.cols;
+    const prow = Math.max(1, Math.ceil(ps.length / a.cols));
+    const blockH = prow*PH + (prow-1)*PGAP, top = a.y + LABEL + Math.max(0, (a.h - LABEL - 18 - blockH)/2);
+    ps.forEach((p, k) => {
+      const r = Math.floor(k / a.cols), c = k % a.cols;
+      const inRow = Math.min(a.cols, ps.length - r*a.cols);
+      const off = (a.cols - inRow) * (pw + PGAP) / 2;
+      B[p.id] = { x: a.x + 12 + off + c*(pw + PGAP), y: top + r*(PH + PGAP), w: pw, h: PH };
+    });
+  });
+  const svg = el("svg", { viewBox:`0 0 ${W} ${H}`, role:"img", "aria-label": s.alt || s.title || "System map", class:"mode-areas" }, $(".map", demo));
+  const gA = el("g", {}, svg), gAL = el("g", {}, svg), gL = el("g", {}, svg), gP = el("g", {}, svg), gB = el("g", {}, svg);
+  areas.forEach(a0 => {
+    const a = A[a0.id];
+    const g = el("g", { class:"area", "data-a":a.id, tabindex:0, role:"button", "aria-label":"Open " + a.name }, gA);
+    el("rect", { x:a.x, y:a.y, width:a.w, height:a.h, rx:10 }, g);
+    el("text", { class:"al", x:a.x+12, y:a.y+20 }, g, a.name);
+    el("text", { class:"ab", x:a.x+16, y:a.y+32 }, g, a.name);
+    if (a.about) {
+      const t = el("text", { class:"as", x:a.x+16, y:a.y+52 }, g);
+      wrapSvgText(t, a.about, Math.min(a.w - 32, 420), 12.5*0.55);
+    }
+  });
+  function wrapSvgText(t, str, maxW, charW){
+    const words = String(str).split(/\s+/); let line = "", lines = [];
+    words.forEach(w => { const test = line ? line + " " + w : w; if (test.length*charW > maxW && line) { lines.push(line); line = w; } else line = test; });
+    if (line) lines.push(line);
+    lines.slice(0,3).forEach((ln, k) => el("tspan", { x:t.getAttribute("x"), dy: k ? "1.3em" : 0 }, t, ln));
+  }
+  // anchors: boxes stacked vertically connect top/bottom near their shared x-range; side-by-side boxes connect left/right.
+  // several link ends on the same side are spread apart so arrows don't stack.
+  function side_(a, b){
+    if (a.y + a.h <= b.y) return "b"; if (b.y + b.h <= a.y) return "t";
+    return (b.x + b.w/2) > (a.x + a.w/2) ? "r" : "l";
+  }
+  function basePoint(a, b, sd){
+    if (sd === "t" || sd === "b") {
+      const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
+      const x = lo < hi ? (lo + hi)/2 : (b.x > a.x ? a.x + a.w - 24 : a.x + 24);
+      return { x: Math.min(a.x + a.w - 14, Math.max(a.x + 14, x)), y: sd === "t" ? a.y : a.y + a.h };
+    }
+    const lo = Math.max(a.y, b.y), hi = Math.min(a.y + a.h, b.y + b.h);
+    const y = lo < hi ? (lo + hi)/2 : a.y + a.h/2;
+    return { x: sd === "l" ? a.x : a.x + a.w, y };
+  }
+  function layoutLinks(list, boxes){
+    const groups = {}, pts = {};
+    list.forEach((l, k) => {
+      const a = boxes[l.from], b = boxes[l.to]; if (!a || !b) return;
+      const sa = side_(a, b), sb = side_(b, a);
+      pts[k] = { from: { ...basePoint(a, b, sa), s: sa }, to: { ...basePoint(b, a, sb), s: sb } };
+      (groups[l.from + "|" + sa] ||= []).push(pts[k].from);
+      (groups[l.to + "|" + sb] ||= []).push(pts[k].to);
+    });
+    Object.entries(groups).forEach(([gk, arr]) => {
+      if (arr.length < 2) return;
+      const sd = gk.split("|")[1], horiz = sd === "t" || sd === "b", box = boxes[gk.split("|")[0]];
+      arr.sort((p, q) => horiz ? p.x - q.x : p.y - q.y);
+      const center = arr.reduce((sum, p) => sum + (horiz ? p.x : p.y), 0) / arr.length;
+      const stepPx = Math.min(30, (horiz ? box.w : box.h) / (arr.length + 1));
+      arr.forEach((p, j) => {
+        const v = center + (j - (arr.length - 1)/2) * stepPx;
+        if (horiz) p.x = Math.min(box.x + box.w - 10, Math.max(box.x + 10, v)); else p.y = Math.min(box.y + box.h - 8, Math.max(box.y + 8, v));
+      });
+    });
+    return pts;
+  }
+  const DIR = { t:[0,-1], b:[0,1], l:[-1,0], r:[1,0] };
+  function curve(p, q){
+    const d = Math.max(30, Math.hypot(q.x-p.x, q.y-p.y)*0.4);
+    const c1 = { x:p.x + DIR[p.s][0]*d, y:p.y + DIR[p.s][1]*d }, c2 = { x:q.x + DIR[q.s][0]*d, y:q.y + DIR[q.s][1]*d };
+    return `M${p.x} ${p.y}C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${q.x} ${q.y}`;
+  }
+  // a vertical link that would cut through other boxes goes around them, through the nearest gap
+  const gutterUse = {};
+  function route(p, q, l, boxes){
+    const vertical = (p.s === "b" && q.s === "t") || (p.s === "t" && q.s === "b");
+    if (!vertical) return curve(p, q);
+    const yTop = Math.min(p.y, q.y), yBot = Math.max(p.y, q.y);
+    const others = Object.entries(boxes).filter(([id]) => id !== l.from && id !== l.to).map(([, b]) => b)
+      .filter(b => b.y < yBot - 2 && b.y + b.h > yTop + 2);
+    const blocks = x => others.some(b => x > b.x - 4 && x < b.x + b.w + 4);
+    const xMid = (p.x + q.x) / 2;
+    const steps = 30, line = t => p.x + (q.x - p.x) * t;
+    let clear = true; for (let k = 1; k < steps; k++) { if (blocks(line(k/steps))) { clear = false; break; } }
+    if (clear) return curve(p, q);
+    const cands = [PAD/2, W - PAD/2];
+    others.forEach(b => { cands.push(b.x - GAP/2, b.x + b.w + GAP/2); });
+    const ok = cands.filter(x => x >= PAD/2 && x <= W - PAD/2 && !blocks(x)).sort((u, v) => Math.abs(u - xMid) - Math.abs(v - xMid));
+    if (!ok.length) return curve(p, q);
+    const key = Math.round(ok[0]); const used = (gutterUse[key] = (gutterUse[key] || 0) + 1) - 1;
+    const gx = ok[0] + (used ? (used % 2 ? 1 : -1) * Math.ceil(used/2) * 7 : 0), dir = q.y > p.y ? 1 : -1, r = 16;
+    return `M${p.x} ${p.y} C${p.x} ${p.y + dir*r*1.6} ${gx} ${p.y + dir*r*0.4} ${gx} ${p.y + dir*r*2}` +
+           ` L${gx} ${q.y - dir*r*2} C${gx} ${q.y - dir*r*0.4} ${q.x} ${q.y - dir*r*1.6} ${q.x} ${q.y}`;
+  }
+  function arrow(g, path, atStart){
+    const len = path.getTotalLength();
+    const tip = path.getPointAtLength(atStart ? 0 : len), back = path.getPointAtLength(atStart ? 7 : len - 7);
+    const a = Math.atan2(tip.y - back.y, tip.x - back.x);
+    const p1 = [tip.x - 9*Math.cos(a) + 4.5*Math.sin(a), tip.y - 9*Math.sin(a) - 4.5*Math.cos(a)];
+    const p2 = [tip.x - 9*Math.cos(a) - 4.5*Math.sin(a), tip.y - 9*Math.sin(a) + 4.5*Math.cos(a)];
+    el("polygon", { points:`${tip.x},${tip.y} ${p1} ${p2}` }, g);
+  }
+  function drawLinks(list, boxes, layer, cls){
+    const pts = layoutLinks(list, boxes);
+    const drawn = [];
+    list.forEach((l, k) => {
+      const pp = pts[k]; if (!pp || !pp.from || !pp.to) return;
+      const g = el("g", { class:cls, "data-l": l.id || ("l"+k), style: roleStyle(l.role) }, layer);
+      const path = el("path", { d: route(pp.from, pp.to, l, boxes) }, g);
+      arrow(g, path, false); if (l.both) arrow(g, path, true);
+      drawn.push({ l, g, m: path.getPointAtLength(path.getTotalLength()/2), pair: [l.from, l.to].sort().join("|") });
+    });
+    // labels go to the right of their arrow; when two arrows join the same pair, the left one's label goes on its left
+    drawn.forEach(d => {
+      if (!d.l.label) return;
+      const partner = drawn.find(o => o !== d && o.pair === d.pair);
+      const left = partner && (d.m.x < partner.m.x || (d.m.x === partner.m.x && d.m.y < partner.m.y));
+      const x = left ? d.m.x - 6 : d.m.x + 6, y = d.m.y + 4, w = d.l.label.length * 6.3;
+      d.box = { x1: left ? x - w : x, x2: left ? x : x + w, y1: y - 11, y2: y + 3 };
+      d.t = el("text", { x, y, "text-anchor": left ? "end" : "start" }, d.g, d.l.label);
+    });
+    // move a label down when it would sit on top of an earlier one
+    const placed = [];
+    drawn.filter(d => d.t).forEach(d => {
+      for (let guard = 0; guard < 8; guard++) {
+        const hit = placed.find(o => d.box.x1 < o.box.x2 + 4 && o.box.x1 < d.box.x2 + 4 && d.box.y1 < o.box.y2 + 2 && o.box.y1 < d.box.y2 + 2);
+        if (!hit) break;
+        const dy = hit.box.y2 + 3 - d.box.y1; d.box.y1 += dy; d.box.y2 += dy;
+        d.t.setAttribute("y", +d.t.getAttribute("y") + dy);
+      }
+      placed.push(d);
+    });
+  }
+  links.forEach((l,k) => { if (!l.id) l.id = "l"+k; });
+  // area-level links: given, or derived from part links that cross areas
+  const areaOf = Object.fromEntries(parts.map(p => [p.id, p.area]));
+  let aLinks = s.areaLinks;
+  if (!aLinks) { const seen = {}; aLinks = [];
+    links.forEach(l => { const fa = areaOf[l.from], ta = areaOf[l.to]; if (fa && ta && fa !== ta && !seen[fa+ta]) { seen[fa+ta] = 1; aLinks.push({ from:fa, to:ta }); } }); }
+  const AB = Object.fromEntries(areas.map(a => [a.id, A[a.id]]));
+  drawLinks(aLinks, AB, gAL, "alink");
+  parts.forEach(p => {
+    const b = B[p.id]; if (!b) return;
+    const g = el("g", { class:"part", "data-p":p.id, tabindex:0, role:"button", "aria-label":p.name, style: roleStyle(p.role) }, gP);
+    el("rect", { x:b.x, y:b.y, width:b.w, height:b.h, rx:7 }, g);
+    el("text", { x:b.x+12, y:b.y+23 }, g, p.name);
+    if (p.code || p.sub) el("text", { class:"s", x:b.x+12, y:b.y+41 }, g, p.sub || p.code);
+  });
+  drawLinks(links, B, gL, "link");
+  const byP = Object.fromEntries(parts.map(p => [p.id, p]));
+  const zbtn = z => $(`[data-z="${z}"]`, demo);
+  function setMode(m){ svg.setAttribute("class", "mode-" + m); zbtn("areas").setAttribute("aria-pressed", m==="areas"); zbtn("parts").setAttribute("aria-pressed", m==="parts"); }
+  function clear(){ svg.classList.remove("dim"); svg.querySelectorAll(".on").forEach(x => x.classList.remove("on")); gB.innerHTML = ""; }
+  function focus(ps, ls){ clear(); svg.classList.add("dim"); ps.forEach(id => svg.querySelector(`[data-p="${id}"]`)?.classList.add("on")); ls.forEach(id => svg.querySelector(`.link[data-l="${id}"]`)?.classList.add("on")); }
+  function intro(){ clear(); side.innerHTML = `<span class="k">Start here</span>${s.start ? `<h4>${esc(s.start.title||"")}</h4>${[].concat(s.start.body||[]).map(p=>`<p>${prose(p)}</p>`).join("")}` : ""}<p style="color:var(--muted)">Click an area to see its parts. Click a part to read about it.${(s.tour||[]).length ? " Or press Next below to follow the tour." : ""}</p>`; }
+  function showPart(id){
+    const p = byP[id]; const ls = links.filter(l => l.from===id || l.to===id);
+    setMode("parts"); focus([id, ...ls.map(l => l.from===id ? l.to : l.from)], ls.map(l => l.id));
+    const talk = ls.map(l => { const other = byP[l.from===id ? l.to : l.from]; return `<li>${l.from===id ? "To" : "From"} <b>${esc(other?.name)}</b>${l.label ? `: ${esc(l.label)}` : ""}</li>`; }).join("");
+    side.innerHTML = `<span class="k" style="color:${rc(p.role)}">${esc(A[p.area]?.name||"")}</span><h4>${esc(p.name)}</h4><p>${prose(p.about)}</p>${talk ? `<div><span class="k">Connections</span><ul>${talk}</ul></div>` : ""}${p.code || p.file ? `<span class="path">${p.code ? `Name in the code: ${esc(p.code)}<br>` : ""}${p.file ? `File: ${esc(p.file)}` : ""}</span>` : ""}`;
+  }
+  function showArea(id){
+    setMode("parts");
+    const ids = partsIn(id).map(p => p.id);
+    const ls = links.filter(l => ids.includes(l.from) || ids.includes(l.to));
+    focus([...ids, ...ls.flatMap(l => [l.from, l.to])], ls.map(l => l.id));
+    side.innerHTML = `<span class="k">Area</span><h4>${esc(A[id].name)}</h4>${A[id].about ? `<p>${prose(A[id].about)}</p>` : ""}<p style="color:var(--muted)">Click a part to read about it. Faded parts belong to other areas.</p>`;
+  }
+  let tour = null;
+  svg.addEventListener("click", e => {
+    const p = e.target.closest(".part"); if (p) { tour?.stop(); return showPart(p.dataset.p); }
+    const a = e.target.closest(".area"); if (a) { tour?.stop(); return showArea(a.dataset.a); }
+  });
+  svg.addEventListener("keydown", e => { if ((e.key==="Enter"||e.key===" ") && e.target.closest(".part,.area")) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click", { bubbles:true })); } });
+  zbtn("areas").onclick = () => { setMode("areas"); intro(); };
+  zbtn("parts").onclick = () => { setMode("parts"); intro(); };
+  if ((s.tour||[]).length) {
+    const T = s.tour;
+    const ticks = {}; T.forEach((t,k) => { if (t.tick) ticks[k] = t.tick; });
+    tour = makePlayer($(".tr", demo), { count:T.length, ticks, key, render: k => {
+      const t = T[k];
+      if (!(t.parts||[]).length && !(t.links||[]).length) { setMode("areas"); clear(); }
+      else {
+        setMode("parts"); focus(t.parts||[], t.links||[]);
+        (t.links||[]).forEach(id => { const path = svg.querySelector(`.link[data-l="${id}"] path`); if (!path) return;
+          const m = path.getPointAtLength(path.getTotalLength()*0.5);
+          const g = el("g", { class:"badge" }, gB); el("circle", { cx:m.x, cy:m.y+6, r:10 }, g); el("text", { x:m.x, y:m.y+10, "text-anchor":"middle" }, g, k+1); });
+      }
+      side.innerHTML = `<span class="k">Tour · step ${k+1} of ${T.length}</span><p>${prose(t.say)}</p>`;
+    } });
+  }
+  setMode("areas"); intro();
+}
+
+/* ═════ flow: lanes, messages in time order, live screen and state ═════ */
+function renderFlow(s, i){
+  const sec = sectionHead(s, i, "Zoom 2 · one action, step by step");
+  const key = secId(s, i);
+  const demo = el("div", { class:"demo" }, sec);
+  demo.innerHTML = `<div class="flow-wrap"><div class="flow scroll-x"></div><div class="side"><div class="say"></div><div class="scr"></div><div class="st"></div></div></div><div class="tr"></div>`;
+  const lanes = s.lanes || [], M = s.steps || [];
+  const L = Object.fromEntries(lanes.map(l => [l.id, l]));
+  const laneW = Math.max(108, ...lanes.map(l => l.name.length*7.6 + 26));
+  const X = {}; lanes.forEach((l,k) => X[l.id] = 40 + laneW/2 + k*laneW);
+  const loopRight = Math.max(0, ...M.filter(m => m.from === m.to && X[m.from] != null).map(m => X[m.from] + 32 + String(m.label).length*6.4 + 12));
+  const top = 64, row = 42, W = Math.max(40 + laneW*lanes.length + 30, loopRight), H = top + M.length*row + 16;
+  const svg = el("svg", { viewBox:`0 0 ${W} ${H}`, role:"img", "aria-label": s.alt || s.title || "Sequence of messages" }, $(".flow", demo));
+  lanes.forEach(l => {
+    const x = X[l.id];
+    el("line", { class:"lifeline", x1:x, y1:44, x2:x, y2:H-6 }, svg);
+    const g = el("g", { class:"lane-h", style: roleStyle(l.role) }, svg);
+    const w = Math.min(laneW - 8, l.name.length*7.6 + 20);
+    el("rect", { x:x-w/2, y:12, width:w, height:28, rx:6 }, g);
+    el("text", { x, y:31, "text-anchor":"middle" }, g, l.name);
+  });
+  const gs = M.map((m, k) => {
+    const yy = top + k*row + 20, role = L[m.from]?.role;
+    if (m.phase) { el("line", { class:"phase-line", x1:0, y1:yy-21, x2:W, y2:yy-21 }, svg); el("text", { class:"phase", x:W-8, y:yy-9, "text-anchor":"end" }, svg, String(m.phase).toUpperCase()); }
+    const g = el("g", { class:"msg", style: roleStyle(role) }, svg);
+    el("rect", { class:"band", x:0, y:yy-20, width:W, height:row-2, rx:4 }, g);
+    const x1 = X[m.from], x2 = X[m.to];
+    if (m.from === m.to) {
+      el("path", { d:`M${x1} ${yy-6}h26v12h-22` }, g);
+      el("polygon", { points:`${x1+2},${yy+6} ${x1+9},${yy+2} ${x1+9},${yy+10}` }, g);
+      el("text", { x:x1+32, y:yy+4 }, g, m.label);
+    } else {
+      const dir = x2 > x1 ? 1 : -1, xe = x2 - dir*3;
+      el("line", { x1, y1:yy, x2:xe - dir*6, y2:yy }, g);
+      el("polygon", { points:`${xe},${yy} ${xe-dir*8},${yy-4} ${xe-dir*8},${yy+4}` }, g);
+      el("text", { x:(x1+x2)/2, y:yy-6, "text-anchor":"middle" }, g, m.label);
+    }
+    el("text", { class:"num", x:6, y:yy+4 }, g, String(k+1).padStart(2,"0"));
+    return g;
+  });
+  const scr = carry(M, "screen"), st = carry(M, "state");
+  const ticks = {}; M.forEach((m,k) => { if (m.tick) ticks[k] = m.tick; });
+  const p = makePlayer($(".tr", demo), { count:M.length, ticks, key, render: k => {
+    gs.forEach((g,j) => { g.classList.toggle("on", j===k); g.classList.toggle("past", j<k); g.classList.toggle("future", j>k); });
+    const m = M[k], say = $(".say", demo);
+    say.setAttribute("style", roleStyle(L[m.from]?.role));
+    say.innerHTML = `<span class="stepn">${String(k+1).padStart(2,"0")} · ${esc(L[m.from]?.name)} → ${esc(L[m.to]?.name)}</span>${prose(m.say)}`;
+    $(".scr", demo).innerHTML = screenHTML(scr[k], s.screenLabel);
+    $(".st", demo).innerHTML = st[k] ? `<div class="screen-label">${esc(s.stateLabel || "The data right now")}</div>${stateHTML(st[k], k ? st[k-1] : null)}` : "";
+  } });
+  gs.forEach((g,k) => g.addEventListener("click", () => { p.stop(); activePlayer = p; p.go(k); }));
+}
+
+/* ═════ trace: real code, one line at a time ═════ */
+const KW = /\b(export|import|from|const|let|var|async|await|return|if|else|for|while|function|def|class|new|typeof|null|undefined|true|false|None|True|False|self|this|try|catch|throw|raise|in|of|switch|case|break|continue|fn|pub|impl|struct|match|go|func|defer|interface|type)\b/g;
+function hl(line){
+  // tiny tokenizer: comments, strings, keywords, function calls. Works well enough for JS/TS/Python/Go/Rust.
+  let out = "", i = 0;
+  const n = line.length;
+  while (i < n) {
+    const ch = line[i], rest = line.slice(i);
+    if (rest.startsWith("//") || (ch === "#" && /^#(\s|$|!)/.test(rest))) { out += `<span class="tc">${esc(rest)}</span>`; break; }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      let j = i + 1; while (j < n && line[j] !== ch) { if (line[j] === "\\") j++; j++; }
+      out += `<span class="ts">${esc(line.slice(i, j + 1))}</span>`; i = j + 1; continue;
+    }
+    if (/[A-Za-z_$]/.test(ch)) {
+      let j = i; while (j < n && /[\w$]/.test(line[j])) j++;
+      const w = line.slice(i, j); KW.lastIndex = 0;
+      if (new RegExp("^(" + KW.source.slice(3, -3) + ")$").test(w)) out += `<span class="tk">${w}</span>`;
+      else if (/^\s*\(/.test(line.slice(j))) out += `<span class="tf">${w}</span>`;
+      else out += esc(w);
+      i = j; continue;
+    }
+    out += esc(ch); i++;
+  }
+  return out;
+}
+function renderTrace(s, i){
+  const sec = sectionHead(s, i, "Zoom 3 · real code, one line at a time");
+  const key = secId(s, i);
+  const demo = el("div", { class:"demo" }, sec);
+  const F = s.files || {}, FR = s.frames || {}, T = s.steps || [];
+  const hasScreen = T.some(t => t.screen != null), hasState = T.some(t => t.state != null);
+  demo.innerHTML = `<div class="trace"><div class="codepane"><div class="filetabs"></div><div class="code"></div></div>
+    <div class="statepane">
+      <div class="blk"><div class="k"><span>Functions running now</span><span>newest on top</span></div><div class="stack"></div></div>
+      <div class="blk"><div class="k"><span>Values in this function</span><span>yellow = just changed</span></div><div class="vars"></div></div>
+      ${hasScreen ? `<div class="blk"><div class="k"><span>${esc(s.screenLabel || "What you see")}</span></div><div class="scr"></div></div>` : ""}
+      ${hasState ? `<div class="blk"><div class="k"><span>${esc(s.stateLabel || "The saved data")}</span><span>yellow = just changed</span></div><div class="st"></div></div>` : ""}
+      <div class="blk"><div class="k"><span>Log</span><span>what has happened so far</span></div><div class="log"></div></div>
+    </div></div><div class="tr"></div>`;
+  const tabs = $(".filetabs", demo), code = $(".code", demo), stack = $(".stack", demo), vars = $(".vars", demo), log = $(".log", demo);
+  const scr = carry(T, "screen"), st = carry(T, "state");
+  const frameOf = f => typeof f === "string" ? (FR[f] || { name:f }) : f;
+  const logsAt = []; let acc = [];
+  T.forEach((t,k) => { acc = acc.concat((t.log||[]).map(l => ({ role: l.role, text: l.text, at:k }))); logsAt.push(acc.slice()); });
+  const ticks = {}; T.forEach((t,k) => { if (t.tick) ticks[k] = t.tick; });
+  const answered = {}; let curFile = null;
+  function prevVars(k){ // previous step in the same function, for change highlighting
+    const top = JSON.stringify((T[k].stack||[]).slice(-1)), depth = (T[k].stack||[]).length;
+    for (let j = k-1; j >= 0; j--) { if ((T[j].stack||[]).length === depth && JSON.stringify((T[j].stack||[]).slice(-1)) === top) return T[j].vars || {}; if ((T[j].stack||[]).length < depth) break; }
+    return null;
+  }
+  function render(k){
+    const t = T[k], f = F[t.file]; if (!f) return;
+    tabs.innerHTML = Object.entries(F).map(([fk,ff]) => `<span class="filetab${fk===t.file?" on":""}">${esc(ff.path || fk)}</span>`).join("");
+    let lines = String(f.code).replace(/\n$/,"").split("\n"); const start = f.start || 1; const last = t.to || t.line;
+    if (f.dedent !== false) { const ind = Math.min(...lines.filter(x => x.trim()).map(x => x.match(/^[ \t]*/)[0].length)); if (ind > 0 && isFinite(ind)) lines = lines.map(x => x.slice(Math.min(ind, x.match(/^[ \t]*/)[0].length))); }
+    code.innerHTML = ""; let callout = null;
+    lines.forEach((ln, j) => {
+      const no = start + j, cur = no === t.line, rng = t.to && no > t.line && no <= t.to;
+      const d = el("div", { class:`ln${cur?" cur":""}${rng?" rng":""}` }, code);
+      d.innerHTML = `<span class="ar">${cur ? "▶" : ""}</span><span class="no">${no}</span><span class="cd">${hl(ln) || " "}</span>`;
+      if (no === last) {
+        callout = el("div", { class:"callout" }, code); callout.innerHTML = prose(t.say);
+        if (t.ask) {
+          const a = el("div", { class:"ask" }, callout);
+          a.innerHTML = `<b>Guess first: ${prose(t.ask.q)}</b><div class="opts">${t.ask.options.map((o,j2) => `<button data-j="${j2}">${prose(o)}</button>`).join("")}</div><div class="reveal" hidden></div>`;
+          const show = j2 => {
+            a.querySelectorAll("button").forEach((b,bj) => { b.disabled = true; if (bj===t.ask.answer) b.classList.add("right"); else if (bj===j2) b.classList.add("wrong"); });
+            const rv = $(".reveal", a); rv.hidden = false; rv.innerHTML = (j2===t.ask.answer ? "<b>Right.</b> " : "<b>Not quite.</b> ") + prose(t.ask.why);
+          };
+          a.querySelectorAll("button").forEach(b => b.onclick = () => { answered[k] = +b.dataset.j; show(+b.dataset.j); });
+          if (answered[k] != null) show(answered[k]);
+        }
+      }
+    });
+    if (callout) { const box = code.getBoundingClientRect(), r = callout.getBoundingClientRect();
+      if (r.bottom > box.bottom || r.top < box.top + 60) code.scrollTo({ top: Math.max(0, code.scrollTop + (r.top - box.top) - 140), behavior: curFile===t.file ? "smooth" : "auto" }); }
+    curFile = t.file;
+    stack.innerHTML = (t.stack||[]).map((fr,j,arr) => { const F2 = frameOf(fr); return `<div class="frame${j===arr.length-1?" top":""}" style="${roleStyle(F2.role)}"><span>${esc(F2.name)}()</span>${F2.about ? `<small>${esc(F2.about)}</small>` : ""}</div>`; }).join("");
+    const pv = prevVars(k), V = t.vars || {};
+    vars.innerHTML = Object.keys(V).length ? Object.entries(V).map(([n,v]) => {
+      const changed = !pv || JSON.stringify(pv[n]) !== JSON.stringify(v);
+      return `<span class="vn" data-v="${esc(n)}">${esc(n)}</span><span class="vv${changed?" chg":""}">${prose(String(v))}</span>`;
+    }).join("") : `<span class="none">No values yet.</span>`;
+    const sc = $(".scr", demo); if (sc) sc.innerHTML = scr[k] ? `<div class="screen">${scr[k]}</div>` : `<span class="none">Nothing to show yet.</span>`;
+    const se = $(".st", demo); if (se) se.innerHTML = st[k] ? stateHTML(st[k], k ? st[k-1] : null) : `<span class="none">Nothing yet.</span>`;
+    const LG = logsAt[k];
+    log.innerHTML = LG.length ? LG.map(l => `<div class="${l.at===k?"new":""}" style="${roleStyle(l.role)}"><span>[${esc(ROLES[l.role]?.name || l.role || "log")}]</span><span>${prose(l.text)}</span></div>`).join("") : `<span class="none">Nothing has happened yet.</span>`;
+    log.scrollTop = log.scrollHeight;
+  }
+  vars.addEventListener("mouseover", e => { const n = e.target.closest(".vn"); if (!n) return; const name = n.dataset.v.split(/[\s.[]/)[0];
+    if (name.length > 1) code.querySelectorAll(".ln").forEach(d => d.classList.toggle("dim", !d.textContent.includes(name))); });
+  vars.addEventListener("mouseout", () => code.querySelectorAll(".ln.dim").forEach(d => d.classList.remove("dim")));
+  makePlayer($(".tr", demo), { count:T.length, ticks, key, render });
+}
+
+/* ═════ compare: two ways side by side, stepped together ═════ */
+function renderCompare(s, i){
+  const sec = sectionHead(s, i, "Side by side");
+  const key = secId(s, i);
+  const demo = el("div", { class:"demo" }, sec);
+  demo.innerHTML = `<div class="cmp"><div class="left"></div><div class="right"></div></div><div class="tr"></div>`;
+  const T = s.steps || [];
+  const sides = ["left","right"];
+  const carried = Object.fromEntries(sides.map(sd => [sd, { screen: carry(T.map(t => t[sd]||{}), "screen"), state: carry(T.map(t => t[sd]||{}), "state") }]));
+  const ticks = {}; T.forEach((t,k) => { if (t.tick) ticks[k] = t.tick; });
+  makePlayer($(".tr", demo), { count:T.length, ticks, key, render: k => {
+    sides.forEach(sd => {
+      const meta = s[sd] || {}, step = T[k][sd] || {}, box = $("." + sd, demo);
+      box.innerHTML = `<h4 style="color:${rc(meta.role)}">${esc(meta.title || sd)}</h4><div class="say" style="${roleStyle(meta.role)}">${prose(step.say || "")}</div>${screenHTML(carried[sd].screen[k], s.screenLabel)}${carried[sd].state[k] ? stateHTML(carried[sd].state[k], k ? carried[sd].state[k-1] : null) : ""}`;
+    });
+  } });
+}
+
+const R = { glossary:renderGlossary, text:renderText, custom:renderCustom, map:renderMap, flow:renderFlow, trace:renderTrace, compare:renderCompare };
+sections.forEach((s, i) => { try { (R[s.type] || renderText)(s, i); } catch (e) { console.error("section failed", s.type, e); } });
+
+if (P.takeaway) { const t = el("div", { class:"takeaway stage" }, app); t.innerHTML = `<div class="eyebrow">The one thing to remember</div><p>${prose(P.takeaway)}</p>`; }
+if (P.footer) { const f = el("footer", { class:"stage" }, app); f.innerHTML = prose(P.footer); }
+
+// deep link: #<section-id>-<step>
+try { const m = location.hash.match(/^#([\w-]+)-(\d+)$/); if (m && players[m[1]]) { players[m[1]].go(+m[2]-1, false); activePlayer = players[m[1]]; setTimeout(() => document.getElementById(m[1])?.scrollIntoView(), 60); } } catch(e) {}
+})();
+</script>
+</body>
+</html>

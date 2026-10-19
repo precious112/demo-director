@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+*.log
+
+# Rendered output stays local: every film here re-renders from its script.
+# The README's preview GIFs live in media/, outside the skill, so installing
+# the skill does not download them.
+**/renders/**

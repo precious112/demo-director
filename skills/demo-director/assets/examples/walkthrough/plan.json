@@ -1,0 +1,166 @@
+{
+  "title": "Harbor \u2014 a reply, end to end",
+  "mode": "walkthrough",
+  "thesis": "A support queue is one place, and Harbor keeps the state of every conversation in it.",
+  "audience": "Support leads evaluating a helpdesk; watching muted on a phone.",
+  "runtime": 23.3,
+  "formats": [
+    "phone",
+    "wide"
+  ],
+  "sound": "silent, with cuts on the click and the send",
+  "palette": {
+    "bg": "#0e1116",
+    "panel": "#12161d",
+    "line": "#242c39",
+    "ink": "#e7ebf2",
+    "muted": "#8b95a7",
+    "accent": "#4f8cff"
+  },
+  "note": "The app on screen is Harbor, a fictional support desk. Every state is reached by a real click on the real element; the loading state and the toast are the app's own.",
+  "beats": [
+    {
+      "title": "Open \u00b7 the queue",
+      "kind": "intro",
+      "from": 0,
+      "to": 3.6,
+      "camera": "Static on the conversation column; app sits below a reserved caption band.",
+      "motion": "Nothing moves but the cursor. The first caption fades in over 180ms.",
+      "action": "Hold the column long enough to read three subjects.",
+      "captions": [
+        {
+          "text": "Every customer question, in one queue.",
+          "from": 0.3,
+          "to": 3.3
+        }
+      ],
+      "keyframes": [
+        {
+          "t": 1.5,
+          "img": "storyboard/t001.50.png",
+          "note": "Caption in the band; the list reads at phone size."
+        }
+      ]
+    },
+    {
+      "title": "Open one conversation",
+      "kind": "open",
+      "from": 3.6,
+      "to": 7.87,
+      "camera": "Small push to the row, then a vertical slice through the thread: header, message, reply.",
+      "motion": "Cursor travels on an arc to the row and clicks it; the thread shows Harbor's own loading state for 420ms, then the thread slides up.",
+      "action": "Click the first conversation. The thread loads and the history appears.",
+      "captions": [
+        {
+          "text": "Open one and the whole history is there.",
+          "from": 5.5,
+          "to": 7.7
+        }
+      ],
+      "keyframes": [
+        {
+          "t": 5.5,
+          "img": "storyboard/t005.50.png",
+          "note": "Mid-push as the row is clicked."
+        },
+        {
+          "t": 7.0,
+          "img": "storyboard/t007.00.png",
+          "note": "The thread, scrolled to the latest message."
+        }
+      ]
+    },
+    {
+      "title": "Write and send a reply",
+      "kind": "action",
+      "from": 7.87,
+      "to": 13.97,
+      "camera": "Close on the composer, then pull back far enough to reach Send.",
+      "motion": "Text types at 42ms a character, seeded so the pacing is identical on every render. The Send button takes the hand before it is pressed.",
+      "action": "Click the composer, type the reply, click Send.",
+      "honesty": "The typed line is a real reply, not a macro or a canned result.",
+      "captions": [],
+      "keyframes": [
+        {
+          "t": 11.5,
+          "img": "storyboard/t011.50.png",
+          "note": "The reply being typed; composer focused."
+        }
+      ]
+    },
+    {
+      "title": "The state changes by itself",
+      "kind": "state",
+      "from": 13.97,
+      "to": 17.47,
+      "camera": "The new message and the toast, held still; the state change is the subject.",
+      "motion": "The reply lands, a toast confirms it, and the chip flips Open to Pending.",
+      "action": "Nothing is clicked. The app does the work.",
+      "captions": [
+        {
+          "text": "Harbor tracks the state for you.",
+          "from": 15.0,
+          "to": 17.2
+        }
+      ],
+      "keyframes": [
+        {
+          "t": 14.5,
+          "img": "storyboard/t014.50.png",
+          "note": "Reply appended and toast shown."
+        }
+      ]
+    },
+    {
+      "title": "Out \u00b7 the queue again",
+      "kind": "out",
+      "from": 17.47,
+      "to": 20.27,
+      "camera": "Pull back to the opening framing.",
+      "motion": "One 1.2s move on the house curve; the caption follows.",
+      "action": "Return to the list, where the row now shows the reply.",
+      "captions": [
+        {
+          "text": "One queue. Nothing slips.",
+          "from": 18.4,
+          "to": 20.0
+        }
+      ],
+      "keyframes": [
+        {
+          "t": 19.0,
+          "img": "storyboard/t019.00.png",
+          "note": "Same framing as the open, so the loop reads."
+        }
+      ]
+    },
+    {
+      "title": "End card",
+      "kind": "end",
+      "from": 20.27,
+      "to": 23.27,
+      "motion": "Card fades in over 250ms and holds still. Last frame doubles as the thumbnail.",
+      "action": "Harbor wordmark, one line of context, the install command.",
+      "captions": [],
+      "keyframes": [
+        {
+          "t": 23.0,
+          "img": "storyboard/t023.00.png",
+          "note": "Held still for 3s."
+        }
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "q": "Runtime",
+      "note": "23.7s suits a social feed and a README.",
+      "pick": "Keep it under 25s; the wide cut reuses the same script."
+    },
+    {
+      "q": "The reply",
+      "note": "The typed line is invented for the film.",
+      "pick": "Keep it; if you want different words, they are one string in film.mjs."
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harbor — a reply, end to end — storyboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --bg:#0e1116; --panel:#12161d; --line:#242c39; --ink:#e7ebf2; --muted:#8b95a7; --accent:#4f8cff;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "SF Mono", Menlo, monospace; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 48px 20px 96px; }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h2 { font-size: 18px; margin: 0; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 17px; color: var(--muted); max-width: 74ch; }
+header .thesis { font-size: 19px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--muted); font-size: 13px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.block { margin-top: 56px; display: flex; flex-direction: column; gap: 16px; }
+.ruler { display: flex; height: 34px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.ruler .seg { display: flex; align-items: center; justify-content: center; min-width: 0; background: var(--panel); color: var(--muted); text-decoration: none; border-right: 1px solid var(--bg); }
+.ruler .seg span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; font-size: 11px; }
+.ruler .seg:hover { background: #1b212c; color: var(--ink); }
+.k-intro { background: #1a2130; } .k-open { background: #16233a; } .k-action { background: #14251d; } .k-state { background: #241d0c; } .k-out { background: #201a2a; } .k-end { background: #241419; }
+.beat { border-top: 1px solid var(--line); padding: 28px 0; display: flex; flex-direction: column; gap: 16px; }
+.beat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tc { font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.kf { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.frame { position: relative; aspect-ratio: 4 / 5; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: grid; place-items: center; }
+.frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.frame .ph { color: var(--muted); font-size: 12px; }
+.frame .kf-cap { position: absolute; left: 8px; right: 8px; bottom: 8px; background: color-mix(in srgb, var(--bg) 86%, transparent); border-radius: 6px; padding: 3px 7px; font-size: 11.5px; }
+.kf figcaption { font-size: 12px; color: var(--muted); display: flex; gap: 6px; }
+.kf figcaption b { font-family: var(--mono); color: var(--ink); font-weight: 500; }
+.notes { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; }
+.fields { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px 14px; margin: 0; font-size: 14px; align-content: start; }
+.fields dt { font-family: var(--mono); font-size: 11.5px; color: var(--muted); padding-top: 3px; }
+.fields dd { margin: 0; }
+.caps { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; align-self: start; }
+.caps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.caps .line { font-size: 17px; font-weight: 600; display: block; text-wrap: balance; }
+.caps .meta { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.q p { font-size: 13.5px; color: var(--muted); }
+.q .pick b { color: var(--accent); }
+@media (max-width: 820px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="stack">
+    <span class="label">Storyboard · for review before any frames are rendered</span>
+    <h1>Harbor — a reply, end to end</h1>
+    <p class="lede thesis">A support queue is one place, and Harbor keeps the state of every conversation in it.</p>
+    <div class="meta">
+      <span>Mode&nbsp; <b>walkthrough</b></span>
+      <span>Audience&nbsp; <b>Support leads evaluating a helpdesk; watching muted on a phone.</b></span>
+      <span>Runtime&nbsp; <b>23.3s</b></span>
+      <span>Formats&nbsp; <b>phone, wide</b></span>
+      <span>Sound&nbsp; <b>silent, with cuts on the click and the send</b></span>
+    </div>
+    <p class="lede">The app on screen is Harbor, a fictional support desk. Every state is reached by a real click on the real element; the loading state and the toast are the app's own.</p>
+  </header>
+
+  <section class="block">
+    <span class="label">The film at a glance · 23.3s</span>
+    <div class="ruler" role="img" aria-label="Timeline of 6 beats"><a href="#b0" class="seg k-intro" style="width:15.450643776824032%"><span>Open · the queue</span></a><a href="#b1" class="seg k-open" style="width:18.326180257510728%"><span>Open one conversation</span></a><a href="#b2" class="seg k-action" style="width:26.180257510729614%"><span>Write and send a reply</span></a><a href="#b3" class="seg k-state" style="width:15.021459227467805%"><span>The state changes by itself</span></a><a href="#b4" class="seg k-out" style="width:12.017167381974252%"><span>Out · the queue again</span></a><a href="#b5" class="seg k-end" style="width:12.875536480686694%"><span>End card</span></a></div>
+  </section>
+
+  
+  <section class="beat" id="b0">
+    <div class="beat-head">
+      <h2>Open · the queue</h2>
+      <span class="tc">0:00.0 – 0:03.6 · 3.6s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t001.50.png" alt=""></div><figcaption><b>0:01.5</b>Caption in the band; the list reads at phone size.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Hold the column long enough to read three subjects.</dd>
+        <dt>Camera</dt><dd>Static on the conversation column; app sits below a reserved caption band.</dd>
+        <dt>Motion</dt><dd>Nothing moves but the cursor. The first caption fades in over 180ms.</dd>
+        
+      </dl>
+      <div class="caps"><span class="label">Captions on screen</span><ol><li><span class="line">Every customer question, in one queue.</span><span class="meta">0:00.3 – 0:03.3</span></li></ol></div>
+    </div>
+  </section>
+
+  <section class="beat" id="b1">
+    <div class="beat-head">
+      <h2>Open one conversation</h2>
+      <span class="tc">0:03.6 – 0:07.9 · 4.3s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t005.50.png" alt=""></div><figcaption><b>0:05.5</b>Mid-push as the row is clicked.</figcaption></figure><figure class="kf"><div class="frame"><img src="storyboard/t007.00.png" alt=""></div><figcaption><b>0:07.0</b>The thread, scrolled to the latest message.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Click the first conversation. The thread loads and the history appears.</dd>
+        <dt>Camera</dt><dd>Small push to the row, then a vertical slice through the thread: header, message, reply.</dd>
+        <dt>Motion</dt><dd>Cursor travels on an arc to the row and clicks it; the thread shows Harbor's own loading state for 420ms, then the thread slides up.</dd>
+        
+      </dl>
+      <div class="caps"><span class="label">Captions on screen</span><ol><li><span class="line">Open one and the whole history is there.</span><span class="meta">0:05.5 – 0:07.7</span></li></ol></div>
+    </div>
+  </section>
+
+  <section class="beat" id="b2">
+    <div class="beat-head">
+      <h2>Write and send a reply</h2>
+      <span class="tc">0:07.9 – 0:14.0 · 6.1s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t011.50.png" alt=""></div><figcaption><b>0:11.5</b>The reply being typed; composer focused.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Click the composer, type the reply, click Send.</dd>
+        <dt>Camera</dt><dd>Close on the composer, then pull back far enough to reach Send.</dd>
+        <dt>Motion</dt><dd>Text types at 42ms a character, seeded so the pacing is identical on every render. The Send button takes the hand before it is pressed.</dd>
+        <dt>Honesty</dt><dd>The typed line is a real reply, not a macro or a canned result.</dd>
+      </dl>
+      
+    </div>
+  </section>
+
+  <section class="beat" id="b3">
+    <div class="beat-head">
+      <h2>The state changes by itself</h2>
+      <span class="tc">0:14.0 – 0:17.5 · 3.5s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t014.50.png" alt=""></div><figcaption><b>0:14.5</b>Reply appended and toast shown.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Nothing is clicked. The app does the work.</dd>
+        <dt>Camera</dt><dd>The new message and the toast, held still; the state change is the subject.</dd>
+        <dt>Motion</dt><dd>The reply lands, a toast confirms it, and the chip flips Open to Pending.</dd>
+        
+      </dl>
+      <div class="caps"><span class="label">Captions on screen</span><ol><li><span class="line">Harbor tracks the state for you.</span><span class="meta">0:15.0 – 0:17.2</span></li></ol></div>
+    </div>
+  </section>
+
+  <section class="beat" id="b4">
+    <div class="beat-head">
+      <h2>Out · the queue again</h2>
+      <span class="tc">0:17.5 – 0:20.3 · 2.8s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t019.00.png" alt=""></div><figcaption><b>0:19.0</b>Same framing as the open, so the loop reads.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Return to the list, where the row now shows the reply.</dd>
+        <dt>Camera</dt><dd>Pull back to the opening framing.</dd>
+        <dt>Motion</dt><dd>One 1.2s move on the house curve; the caption follows.</dd>
+        
+      </dl>
+      <div class="caps"><span class="label">Captions on screen</span><ol><li><span class="line">One queue. Nothing slips.</span><span class="meta">0:18.4 – 0:20.0</span></li></ol></div>
+    </div>
+  </section>
+
+  <section class="beat" id="b5">
+    <div class="beat-head">
+      <h2>End card</h2>
+      <span class="tc">0:20.3 – 0:23.3 · 3.0s</span>
+    </div>
+    <div class="strip"><figure class="kf"><div class="frame"><img src="storyboard/t023.00.png" alt=""></div><figcaption><b>0:23.0</b>Held still for 3s.</figcaption></figure></div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Action</dt><dd>Harbor wordmark, one line of context, the install command.</dd>
+        
+        <dt>Motion</dt><dd>Card fades in over 250ms and holds still. Last frame doubles as the thumbnail.</dd>
+        
+      </dl>
+      
+    </div>
+  </section>
+
+  <section class="block"><span class="label">Decisions I need from you</span><div class="qs">
+  <div class="q"><h3>Runtime</h3><p>23.7s suits a social feed and a README.</p><p class="pick"><b>My pick:</b> Keep it under 25s; the wide cut reuses the same script.</p></div>
+  <div class="q"><h3>The reply</h3><p>The typed line is invented for the film.</p><p class="pick"><b>My pick:</b> Keep it; if you want different words, they are one string in film.mjs.</p></div></div></section>
+
+  <section class="block">
+    <span class="label">Before we build</span>
+    <p class="lede">Reply with any changes, or say <b>go</b> to build it. If you would rather skip the review, say <b>build it anyway</b> and I will render straight to a preview.</p>
+  </section>
+</div>
+</body>
+</html>

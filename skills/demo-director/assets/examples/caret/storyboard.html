@@ -1,0 +1,478 @@
+<title>Caret Demo Storyboards</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; each film is a run of beat rows, two framing diagrams left, notes right.
+   Palette and type are Caret's own chrome (dark first), so the plan reads like the app it describes. */
+:root {
+  --bg: #0b0d12;
+  --panel: #12151c;
+  --border: #1e232e;
+  --text: #e6e9ef;
+  --muted: #8b93a7;
+  --accent: #0b7aff;
+  --warn: #e0a83a;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f7f9; --panel: #ffffff; --border: #dde1e8; --text: #12151c; --muted: #5b6375;
+    --accent: #0066db; --warn: #9a6a12; color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f6f7f9; --panel: #ffffff; --border: #dde1e8; --text: #12151c; --muted: #5b6375;
+  --accent: #0066db; --warn: #9a6a12; color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 96px;
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; }
+h2 { font-size: 24px; line-height: 1.25; }
+h3 { font-size: 15px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.lede { font-size: 17px; color: var(--muted); max-width: 70ch; }
+code { font-family: var(--mono); font-size: 0.86em; }
+.label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+section.block { margin-top: 64px; display: flex; flex-direction: column; gap: 18px; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 56px 0 0; }
+ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+ul.plain li { max-width: 74ch; }
+
+.films { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 28px; }
+.film-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.film-card a { color: inherit; text-decoration: none; }
+.film-card a:hover h3, .film-card a:focus-visible h3 { color: var(--accent); }
+.film-card .len { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+/* Vahl gallery */
+.gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.gallery figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gallery img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--border); }
+.gallery figcaption { font-size: 13px; color: var(--muted); }
+.tokens { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.tokens span { display: inline-flex; align-items: center; gap: 6px; }
+.chip { width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--border); display: inline-block; }
+
+/* Beats */
+.beats { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.beat { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 24px; padding-block: 22px; border-bottom: 1px solid var(--border); }
+.frames { display: grid; grid-template-columns: 0.62fr 1fr; gap: 10px; align-items: start; }
+.frames figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.frames figcaption { font-size: 11px; color: var(--muted); }
+.frames svg { width: 100%; height: auto; display: block; border-radius: 4px; }
+.tc { font-family: var(--mono); font-size: 12.5px; color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 8px; display: block; }
+.beat h3 { font-size: 16px; }
+.fields { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 6px 14px; margin-top: 10px; font-size: 14px; }
+.fields dt { color: var(--muted); font-size: 12px; padding-top: 2px; }
+.fields dd { margin: 0; min-width: 0; }
+.caption { display: inline-block; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 2px 9px; font-weight: 600; font-size: 13.5px; }
+.draft { font-size: 11px; color: var(--warn); margin-left: 6px; letter-spacing: .04em; }
+.staged { font-size: 13px; color: var(--muted); border-left: 2px solid var(--border); padding-left: 10px; margin-top: 10px; }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 640px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td.f { font-family: var(--mono); font-size: 12px; white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.spec { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.spec strong { font-size: 15px; }
+.spec p { font-size: 14px; color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 9px; border-radius: 2px; display: inline-block; border: 1px solid var(--border); }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+@media (max-width: 820px) {
+  .beat { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .frames { max-width: 420px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="stack">
+    <span class="label">Launch films · plan v2, for approval</span>
+    <h1>Caret demo storyboards</h1>
+    <p class="lede">Three silent films made from Caret's real interface, scripted frame by frame. They are composed for phones first, because that is where most people will see them, with a desktop cut from the same script. The project on screen is Vahl, a carbon road-bike maker designed for these films.</p>
+  </header>
+
+  <nav class="films" aria-label="Films">
+    <div class="film-card"><a href="#film1"><span class="len">Film 1 · about 60s</span><h3>One repo</h3><p class="muted">Vahl's design is code in the same repo as its shop. An edit on the page lands in a file, and sync carries it into the shop.</p></a></div>
+    <div class="film-card"><a href="#film2"><span class="len">Film 2 · about 45s</span><h3>Pictures that belong</h3><p class="muted">A photograph made inside the project, lit by Vahl's own foundation, branched until it is right.</p></a></div>
+    <div class="film-card"><a href="#film3"><span class="len">Film 3 · about 60s</span><h3>Edit where you see it</h3><p class="muted">Resize, paint and describe, three takes at once, and the skills and libraries the AI designs with.</p></a></div>
+  </nav>
+
+  <section class="block" id="changes">
+    <h2>What changed from v1</h2>
+    <ul class="plain">
+      <li><strong>TENON is replaced by Vahl</strong>, designed from a study of 18 well-designed product sites, below.</li>
+      <li><strong>Phones first.</strong> The main format is 4:5, with a rule that sets how close the camera must be for text to read on a phone. A 16:9 cut comes from the same script.</li>
+      <li><strong>Captions talk to the viewer about Caret</strong>, never about the demo project, which stays unnamed on screen. They are drafts for you to edit.</li>
+      <li><strong>No sound.</strong></li>
+      <li><strong>Fully simulated.</strong> Nothing runs the real app. Generated pictures, the sync's code change, the rebuilt section and the experiment takes are all staged for the films. The one rule kept: every behaviour shown is something Caret really does, in the order it does it.</li>
+    </ul>
+  </section>
+
+  <section class="block" id="vahl">
+    <h2>The project on screen: Vahl</h2>
+    <p class="lede">A fictional maker of carbon road and gravel bikes in Bergen. Its pages are real Caret design pages: React files in <code>.caret/pages/</code>, styled only with the foundation's tokens, with every visible element carrying a <code>data-caret-id</code>. They run unmodified in Caret's own canvas runtime, which is how the canvas shot below was made.</p>
+    <div class="gallery">
+      <figure><img src="docs/vahl/home-hero.jpg" alt="Vahl home page hero: a rider climbing through misty forest, headline Made for the long, wet way round." loading="lazy"><figcaption>Home, first screen. The photograph is mirrored so the rider rides out of the light while the headline sits over the dark trees.</figcaption></figure>
+      <figure><img src="docs/vahl/strand-top.jpg" alt="Strand product page: the word STRAND set 400px tall over a black bike in a studio." loading="lazy"><figcaption>Strand product page. The model name runs the full width and inverts where it crosses the studio photograph.</figcaption></figure>
+      <figure><img src="docs/vahl/home-strand.jpg" alt="Home page Strand band: giant STRAND over the bike, with weight, frame and clearance figures." loading="lazy"><figcaption>Home, the Strand band: 6.9 kg, 790 g frame, 34 mm clearance.</figcaption></figure>
+      <figure><img src="docs/vahl/strand-specs.jpg" alt="Strand product page: price, colour swatches, sizes and the specification list." loading="lazy"><figcaption>The spec list Film 3 turns into a table.</figcaption></figure>
+      <figure><img src="docs/vahl/canvas-grid.jpg" alt="Caret's canvas showing the Vahl Home and Strand pages grouped as Marketing and Product." loading="lazy"><figcaption>Both pages in Caret's real canvas runtime, grouped by tag, with Caret's toolbar.</figcaption></figure>
+    </div>
+    <h3 style="margin-top:8px">What the design borrows from the best product sites</h3>
+    <ul class="plain">
+      <li><strong>The product and the weather are the hero, full-bleed</strong> (Scout Motors, Rivian, Snow Peak, Leica). No abstract artwork, no gradient blobs.</li>
+      <li><strong>The model name used as type, not as a label</strong> (Rivian's R1S behind the car, Analogue's product names). STRAND is set 400px tall in Big Shoulders Display.</li>
+      <li><strong>One signal colour, used once a screen</strong> (Rivian's yellow, Playdate's yellow). Vahl's is safety-vest orange, kept for the one action on each screen.</li>
+      <li><strong>Plain, specific copy with numbers a rider checks</strong> (Teenage Engineering, Snow Peak): 6.9 kg, 34 mm, "ridden 20 km before it is boxed", a geometry table "so you can check their work".</li>
+    </ul>
+    <h3 style="margin-top:8px">Vahl's foundation</h3>
+    <div class="tokens">
+      <span><i class="chip" style="background:#eef0ee"></i>Fog paper <code>neutral-100</code></span>
+      <span><i class="chip" style="background:#0f1110"></i>Ink <code>neutral-950</code></span>
+      <span><i class="chip" style="background:#ff5a1f"></i>Signal <code>brand-500</code></span>
+      <span>Big Shoulders Display for model names</span>
+      <span>Schibsted Grotesk, 17px, ×1.333</span>
+      <span>Sharp corners, flat, 8px grid</span>
+    </div>
+    <p class="muted" style="max-width:74ch">Both typefaces are outside Caret's list of AI design habits, and both load through Caret's own font pipeline. The theme CSS was generated by Caret's own code from the foundation file, as the app would. Still to build after approval: Fjell (gravel), Journal, Fitting and Test ride, so the canvas has six pages in three groups.</p>
+  </section>
+
+  <section class="block" id="format">
+    <h2>Composed for phones</h2>
+    <div class="specs">
+      <div class="spec"><strong>4:5 is the main film</strong><p>1080×1350, rendered at 2160×2700 and 60fps. 4:5 fills most of a phone screen in X, LinkedIn and Instagram feeds and still sits well on desktop.</p></div>
+      <div class="spec"><strong>16:9 from the same script</strong><p>1920×1080 for YouTube, the README and desktop. The camera follows the same subjects, framed wider.</p></div>
+      <div class="spec"><strong>A readability floor</strong><p>Any text the viewer has to read is at least 34px tall on the 1080px frame, about 12pt on a phone. For Caret's 13px interface text, that means the phone frame shows at most about 410px of the window, which is roughly the width of the chat panel.</p></div>
+      <div class="spec"><strong>Wide shots are orientation only</strong><p>The whole window appears for at most 1.2s and never carries text the viewer needs. Everything readable happens close up.</p></div>
+      <div class="spec"><strong>Captions at phone size</strong><p>On the phone cut, captions sit in a band at the top of the frame at 52px semibold (about 19pt). On desktop they sit bottom-left at 40px. No text goes in the bottom 15% of the phone frame, where feed apps draw their buttons.</p></div>
+      <div class="spec"><strong>The first two seconds are the result</strong><p>Every film opens on its payoff, because a phone viewer decides to keep watching before any setup has played.</p></div>
+    </div>
+    <div class="legend" aria-label="Diagram key">
+      <span><i class="sw" style="background:#12151c"></i>Caret chrome</span>
+      <span><i class="sw" style="background:#0a0a0a"></i>Canvas</span>
+      <span><i class="sw" style="background:#eef0ee"></i>Vahl page</span>
+      <span><i class="sw" style="background:#1a1d24"></i>Code editor</span>
+      <span><i class="sw" style="background:transparent;border:2px solid var(--accent)"></i>Camera frame</span>
+    </div>
+  </section>
+
+  <section class="block" id="staged">
+    <h2>What is staged</h2>
+    <ul class="plain">
+      <li><strong>Generated photographs</strong> are Unsplash photographs, used under the Unsplash licence, which allows commercial use without credit. They arrive on the take board through the board's real states (waiting, making, ready).</li>
+      <li><strong>The sync</strong>: the plan text, the tool rows and the change to the shop's <code>Hero.tsx</code> are written for the film, in the exact formats Caret's chat uses.</li>
+      <li><strong>The rebuilt spec table, the three experiment takes and the rider quotes</strong> are real Vahl pages and sections I build, so they look exactly as finished work would.</li>
+      <li><strong>The Vahl mark and the fog shader</strong>: the mark is drawn as SVG; the shader is real GLSL running in Caret's own shader preview component.</li>
+      <li><strong>The code editor</strong> is a plain, unbranded editor drawn for the films, showing Vahl's real files.</li>
+    </ul>
+  </section>
+
+  <hr>
+  <section class="block" id="film1">
+    <span class="label">Film 1 · about 60 seconds</span>
+    <h2>One repo</h2>
+    <p class="lede">The one idea: Vahl's design is real React in <code>.caret/</code>, in the same repo as its shop. You edit it on a live page, the change is a file you can review, and Caret syncs it into the shop's own code, in either direction.</p>
+    <div class="beats" data-film="1"></div>
+    <h3 style="margin-top:18px">Frame by frame: the headline lands in the file (0:14–0:26)</h3>
+    <div class="table-scroll"><table data-frames="1"></table></div>
+  </section>
+
+  <hr>
+  <section class="block" id="film2">
+    <span class="label">Film 2 · about 45 seconds</span>
+    <h2>Pictures that belong</h2>
+    <p class="lede">The one idea: you say what the picture is, and Caret makes it from Vahl's own foundation, so it already belongs on the page. You branch it until it is right and use it by name.</p>
+    <div class="beats" data-film="2"></div>
+    <h3 style="margin-top:18px">Frame by frame: a take branches (0:20–0:30)</h3>
+    <div class="table-scroll"><table data-frames="2"></table></div>
+  </section>
+
+  <hr>
+  <section class="block" id="film3">
+    <span class="label">Film 3 · about 60 seconds</span>
+    <h2>Edit where you see it</h2>
+    <p class="lede">The one idea: change Vahl's pages by touching them. Drag for the simple things, paint and describe the harder ones, ask for three versions when unsure, and choose the skill and libraries the AI designs with.</p>
+    <div class="beats" data-film="3"></div>
+    <h3 style="margin-top:18px">Frame by frame: the spec list becomes a table (0:10–0:24)</h3>
+    <div class="table-scroll"><table data-frames="3"></table></div>
+  </section>
+
+  <hr>
+  <section class="block" id="next">
+    <h2>Next, once approved</h2>
+    <ul class="plain">
+      <li><strong>Finish Vahl</strong>: Fjell, Journal, Fitting and Test ride pages; the shop's app files for the sync; the staged results listed above.</li>
+      <li><strong>Build the stage</strong>: Caret's chrome mounted from a pinned v0.3.0 checkout with a scripted backend, and Vahl's real canvas runtime underneath. One still of every surface is compared with a real Caret screenshot before anything moves.</li>
+      <li><strong>Film 1 first</strong>, as a 4:5 cut for your review. It carries the camera, cursor, editor and caption systems the other two reuse. Then the 16:9 cut, then Films 2 and 3.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+/* The window is 1600×900: top bar 44, chat 380 when open, focused page 1440 wide.
+   Each beat names a subject box in one window's coordinates; the two frames are the
+   smallest 4:5 and 16:9 rectangles around it. In 4:5 the editor sits below Caret, in 16:9 beside it. */
+const W = 1600, H = 900, TOP = 44, CHAT = 380, GAP = 60;
+const OFFSET = { phone: { caret: [0, 0], editor: [0, H + GAP] }, desk: { caret: [0, 0], editor: [W + GAP, 0] } };
+
+function caretWin(x, y, o) {
+  const right = o.chat ? CHAT : 0;
+  let s = `<rect x="${x}" y="${y}" width="${W}" height="${H}" rx="10" fill="#0b0d12" stroke="#2a3140" stroke-width="3"/>`;
+  s += `<rect x="${x}" y="${y}" width="${W}" height="${TOP}" rx="10" fill="#12151c"/>`;
+  [24, 46, 68].forEach((d, i) => { s += `<circle cx="${x + d}" cy="${y + 22}" r="7" fill="${['#ff5f57','#febc2e','#28c840'][i]}" opacity=".85"/>`; });
+  const sf = o.surface || "grid";
+  const cw = W - right;
+  if (sf === "grid") {
+    s += `<rect x="${x}" y="${y + TOP}" width="${cw}" height="${H - TOP}" fill="#0a0a0a"/>`;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) s += `<rect x="${x + 110 + c * 420}" y="${y + TOP + 90 + r * 330}" width="380" height="238" rx="4" fill="${c === 0 ? '#1c241f' : '#eef0ee'}"/>`;
+  } else if (sf === "page" || sf === "page-dark") {
+    s += `<rect x="${x}" y="${y + TOP}" width="${cw}" height="${H - TOP}" fill="#111"/>`;
+    s += `<rect x="${x}" y="${y + TOP}" width="${cw}" height="40" fill="#1a1a1a"/>`;
+    const pw = Math.min(1440, cw - (o.sidebar ? 280 : 0)), px = x + (cw - (o.sidebar ? 280 : 0) - pw) / 2;
+    s += `<rect x="${px}" y="${y + TOP + 40}" width="${pw}" height="${H - TOP - 40}" fill="${sf === 'page-dark' ? '#1c241f' : '#eef0ee'}"/>`;
+    if (sf === "page") { s += `<rect x="${px + 70}" y="${y + TOP + 120}" width="${pw * 0.6}" height="90" fill="#0f1110"/>`; for (let i = 0; i < 6; i++) s += `<rect x="${px + 600}" y="${y + TOP + 300 + i * 50}" width="${pw * 0.5}" height="2" fill="#a8ada9"/>`; }
+    else { s += `<rect x="${px + 70}" y="${y + TOP + 470}" width="560" height="60" fill="#eef0ee" opacity=".9"/><rect x="${px + 70}" y="${y + TOP + 640}" width="160" height="44" fill="#ff5a1f"/>`; }
+    if (o.sidebar) s += `<rect x="${x + cw - 280}" y="${y + TOP + 40}" width="280" height="${H - TOP - 40}" fill="#14141c"/>`;
+  } else if (sf === "board") {
+    s += `<rect x="${x}" y="${y + TOP}" width="${cw}" height="${H - TOP}" fill="#10121a"/><rect x="${x}" y="${y + TOP}" width="${cw}" height="70" fill="#12151c"/>`;
+    const cols = o.cols || 1;
+    for (let c = 0; c < cols; c++) for (let r = 0; r < (c === 0 ? 4 : 2); r++) s += `<rect x="${x + 40 + c * 300}" y="${y + TOP + 110 + r * 150 + c * 150}" width="200" height="133" rx="4" fill="#3a4448" stroke="${c ? '#3b82f6' : '#2a3140'}" stroke-width="3"/>`;
+    if (cols > 1) s += `<path d="M${x + 250} ${y + TOP + 176} C ${x + 300} ${y + TOP + 176} ${x + 290} ${y + TOP + 326} ${x + 338} ${y + TOP + 326}" stroke="#3b82f6" stroke-width="4" fill="none"/>`;
+    if (o.inspector) s += `<rect x="${x + cw - 340}" y="${y + TOP + 70}" width="340" height="${H - TOP - 70}" fill="#12151c"/>`;
+  } else {
+    s += `<rect x="${x}" y="${y + TOP}" width="${cw}" height="${H - TOP}" fill="#0b0d12"/>`;
+    for (let i = 0; i < 5; i++) s += `<rect x="${x + 220}" y="${y + TOP + 100 + i * 70}" width="${i % 2 ? 700 : 900}" height="${i === 0 ? 24 : 12}" rx="3" fill="#1e232e"/>`;
+    if (sf === "cards") for (let c = 0; c < 3; c++) s += `<rect x="${x + 220 + c * 280}" y="${y + TOP + 470}" width="260" height="170" rx="10" fill="#12151c" stroke="#1e232e" stroke-width="2"/>`;
+  }
+  if (o.chat) {
+    s += `<rect x="${x + W - CHAT}" y="${y + TOP}" width="${CHAT}" height="${H - TOP}" fill="#12151c"/><rect x="${x + W - CHAT}" y="${y + TOP}" width="2" height="${H - TOP}" fill="#1e232e"/>`;
+    for (let i = 0; i < 6; i++) s += `<rect x="${x + W - CHAT + 24}" y="${y + TOP + 70 + i * 56}" width="${i === 0 ? 210 : 300}" height="11" rx="3" fill="#1e232e"/>`;
+    s += `<rect x="${x + W - CHAT + 16}" y="${y + H - 120}" width="${CHAT - 32}" height="80" rx="12" fill="#0b0d12" stroke="#1e232e" stroke-width="2"/>`;
+  }
+  return s;
+}
+function editorWin(x, y) {
+  let s = `<rect x="${x}" y="${y}" width="${W}" height="${H}" rx="10" fill="#1a1d24" stroke="#2a3140" stroke-width="3"/><rect x="${x}" y="${y}" width="360" height="${H}" rx="10" fill="#15171d"/>`;
+  const tree = [[0, 8], [1, 7], [2, 22, 1], [2, 14], [2, 9], [1, 4], [2, 17], [1, 12]];
+  tree.forEach(([d, n, hi], i) => { if (hi) s += `<rect x="${x}" y="${y + 50 + i * 46}" width="360" height="40" fill="rgba(11,122,255,.28)"/>`; s += `<rect x="${x + 28 + d * 26}" y="${y + 64 + i * 46}" width="${n * 11}" height="12" rx="3" fill="#3a4152"/>`; });
+  for (let i = 0; i < 13; i++) { if (i === 6) s += `<rect x="${x + 360}" y="${y + 70 + i * 52}" width="${W - 360}" height="40" fill="rgba(34,197,94,.2)"/>`; s += `<rect x="${x + 400 + (i % 4) * 30}" y="${y + 84 + i * 52}" width="${300 + ((i * 137) % 600)}" height="12" rx="3" fill="#3a4152"/>`; }
+  s += `<rect x="${x + 360}" y="${y + H - 190}" width="${W - 360}" height="190" fill="#111318"/>`;
+  return s;
+}
+function titleCard() {
+  return `<rect x="0" y="0" width="${W}" height="${H}" rx="10" fill="#0b0d12" stroke="#2a3140" stroke-width="3"/><rect x="${W * 0.2}" y="${H * 0.44}" width="${W * 0.6}" height="50" rx="6" fill="#e6e9ef" opacity=".85"/>`;
+}
+function fit(box, aspect, pad) {
+  let [x, y, w, h] = box; w *= pad; h *= pad;
+  if (w / h > aspect) h = w / aspect; else w = h * aspect;
+  const cx = box[0] + box[2] / 2, cy = box[1] + box[3] / 2;
+  return [cx - w / 2, cy - h / 2, w, h];
+}
+function diagram(b, mode) {
+  const L = b.layout || {};
+  const aspect = mode === "phone" ? 4 / 5 : 16 / 9;
+  const off = OFFSET[mode];
+  let content = "", bounds;
+  if (L.card) { content = titleCard(); bounds = [0, 0, W, H]; }
+  else {
+    content = caretWin(off.caret[0], off.caret[1], L);
+    bounds = [0, 0, W, H];
+    if (L.editor) { content += editorWin(off.editor[0], off.editor[1]); bounds = [0, 0, off.editor[0] + W, off.editor[1] + H]; }
+  }
+  const t = b.target === "editor" ? off.editor : off.caret;
+  const box = b.box === "all" ? [bounds[0], bounds[1], bounds[2], bounds[3]] : [b.box[0] + t[0], b.box[1] + t[1], b.box[2], b.box[3]];
+  const cam = fit(box, aspect, b.box === "all" ? 1.02 : 1.12);
+  const vb = [Math.min(bounds[0], cam[0]) - 30, Math.min(bounds[1], cam[1]) - 30];
+  const vw = Math.max(bounds[0] + bounds[2], cam[0] + cam[2]) + 30 - vb[0];
+  const vh = Math.max(bounds[1] + bounds[3], cam[1] + cam[3]) + 30 - vb[1];
+  const frame = `<rect x="${cam[0]}" y="${cam[1]}" width="${cam[2]}" height="${cam[3]}" rx="6" fill="none" stroke="#0b7aff" stroke-width="${Math.max(8, vw / 160)}"/>`;
+  const dim = `<path fill-rule="evenodd" fill="rgba(0,0,0,.45)" d="M${vb[0]} ${vb[1]}h${vw}v${vh}h${-vw}z M${cam[0]} ${cam[1]}v${cam[3]}h${cam[2]}v${-cam[3]}z"/>`;
+  return `<svg viewBox="${vb[0]} ${vb[1]} ${vw} ${vh}" role="img" aria-label="${mode === 'phone' ? 'Phone 4:5' : 'Desktop 16:9'} framing for ${b.title}">${content}${dim}${frame}</svg>`;
+}
+
+/* Subject boxes, in window pixels. Narrow boxes are close-ups that meet the phone readability floor. */
+const FILMS = {
+  1: [
+    { tc: "0:00–0:02", title: "The opening line", layout: { card: true }, box: [240, 300, 1120, 300],
+      screen: "Caret's dark ground and one line: your website headline.",
+      motion: "Fades in over 200ms, holds, hard cut.",
+      caption: "Your design shouldn’t live outside your codebase.", owner: true },
+    { tc: "0:02–0:06", title: "Vahl's pages, running", layout: { surface: "grid" }, box: [100, 120, 820, 620],
+      screen: "Caret's canvas: Vahl's Home, Strand and Fjell cards under MARKETING and PRODUCT, live pages with their photographs. Top bar reads “vahl” and “Preview running”.",
+      motion: "Phone: a still frame on two cards. The cursor rests on the Home card; its blue hover ring appears.",
+      caption: "Your pages, running live in Caret." },
+    { tc: "0:06–0:14", title: "Each page is a file", layout: { surface: "grid", editor: true }, box: "all",
+      screen: "The camera pulls back to show a second window that was there all along: an editor on the same vahl folder. Its tree shows .caret/pages/home, .caret/pages/strand and .caret/tokens above src/app and src/components. The camera then moves to the tree, where hovering the Home card has lit pages/home/index.tsx.",
+      motion: "Pull back 1000ms, hold 600ms, then push into the file tree until the tree text meets the readability floor.",
+      caption: "Every page is a React file in your repo, beside your app.",
+      staged: "The tree highlight is the film explaining a true mapping; Caret does not draw it." },
+    { tc: "0:14–0:26", title: "Retype the headline", layout: { surface: "page-dark", editor: true }, box: [70, 470, 620, 330], key: true,
+      screen: "Home opens in the focused view. Right-click the headline: Caret's menu (Home.h1 · Copy, Style, Comment, Open, AI Edit, Edit text, Edit color, Replace image). Edit text. “Made for the long, wet way round.” becomes “Made for two hundred wet days a year.” Enter. Toast: “Edit applied”.",
+      motion: "Phone: framed on the headline and the menu, which are both large enough. Then a cut down to the editor line, now changed and highlighted.",
+      caption: "Edit on the page. The change is in the file." },
+    { tc: "0:26–0:34", title: "A grey snaps to a token", layout: { surface: "page", editor: true }, box: [600, 300, 420, 420],
+      screen: "Lower on Home: the “Fitted before it is built” band. Right-click › Edit color. The colour popover opens; the cursor drags a little lighter. Toast: “Matched neutral-300 — bound to the token”.",
+      motion: "Phone: the popover fills the frame (it is 236px wide, so it reads). Cut to the editor: the class is bg-neutral-300, not a hex code.",
+      caption: "Colours snap to your design tokens, not hex codes." },
+    { tc: "0:34–0:39", title: "Reviewable, and the shop untouched", layout: { surface: "grid", editor: true }, target: "editor", box: [380, 700, 600, 200],
+      screen: "The editor's terminal: git status lists modified: .caret/pages/home/index.tsx and nothing under src/.",
+      motion: "Command typed at speed; the output holds 1.6s.",
+      caption: "Your app’s own source stays untouched until you sync.", owner: true },
+    { tc: "0:39–0:52", title: "Sync into the shop", layout: { surface: "page-dark", chat: true, editor: true }, box: [1220, 44, 380, 856],
+      screen: "Sync in the top bar. Toast: “Syncing design → app: 1 changed design file(s).” The chat, titled “Sync design → app”: the planning note, read rows (.caret/pages/home/index.tsx, src/components/home/Hero.tsx), then the PLAN card. Act. “Apply the plan.” An edit row, the dock “Change src/components/home/Hero.tsx?”, Allow, then “Synced — 1 app file(s) changed.”",
+      motion: "Phone: the chat panel is 380px wide, which fits the phone frame almost exactly, so this beat is one tall, readable shot. Working time shows on the chat's own elapsed counter, then a visible cut. Ends on the editor: Hero.tsx in the shop now has the new headline.",
+      caption: "Sync carries the change into your app’s own code." },
+    { tc: "0:52–0:57", title: "And back the other way", layout: { surface: "board" }, box: [40, 110, 560, 640],
+      screen: "A teammate edits Hero.tsx directly. Caret's toast: “This commit changed app files that were translated from “.caret/pages/home/index.tsx” — the design no longer tells the truth about them.” Review side by side opens “Review: home vs the app”: Current design beside App's version.",
+      motion: "Phone: framed on the two boards. Cursor rests on “Use the app's version”.",
+      caption: "Edit the app directly, and Caret notices." },
+    { tc: "0:57–1:00", title: "End card", layout: { card: true }, box: [240, 300, 1120, 300],
+      screen: "The logo on its white tile, “Caret”, “A design layer that lives in your repo.”, then “Free and open source. macOS, Windows, Linux.” and caretai.cloud.",
+      motion: "200ms fade in. Holds.",
+      caption: "A design layer that lives in your repo.", owner: true },
+  ],
+  2: [
+    { tc: "0:00–0:02", title: "The result first", layout: { surface: "board", cols: 2 }, box: [30, 160, 560, 520],
+      screen: "A take board already grown: four fog photographs, one branched into two warmer ones, joined by a blue line.",
+      motion: "Still. Hard cut.", caption: null },
+    { tc: "0:02–0:08", title: "Say what it is", layout: { surface: "doc" }, box: [460, 140, 520, 420],
+      screen: "Assets › Generate. “What are you making?”, “A photograph or image” selected. Typed: “a rider alone on a wet road in thick fog”. Shape 3:2. Help with the prompt: Polish it. “Generate 4 takes”.",
+      motion: "Typing at 45ms a character. The prompt box is the subject; it meets the floor at this width.",
+      caption: "Say what the picture is." },
+    { tc: "0:08–0:14", title: "The brief comes from Vahl", layout: { surface: "board" }, box: [0, 44, 520, 220],
+      screen: "The board opens with four waiting takes. “Caret is writing the brief from your words…”, then the brief. Toggle to “Caret’s brief”: cool fog-grey light, wet asphalt, low contrast, one signal-orange rear light.",
+      motion: "Held long enough to read the colour words.",
+      caption: "The brief is lit and coloured by your design system." },
+    { tc: "0:14–0:20", title: "Takes land", layout: { surface: "board" }, box: [30, 150, 260, 620],
+      screen: "Four takes go from “waiting…” to “making…” to fog photographs, one at a time.",
+      motion: "Phone: the column of four is tall and narrow, which suits the frame. Cuts on each arrival compress the wait.",
+      caption: null },
+    { tc: "0:20–0:30", title: "Change one, and it branches", layout: { surface: "board", cols: 2, inspector: true }, box: [30, 150, 600, 520], key: true,
+      screen: "Click take 2. Inspector: “Change it · grows 2 takes out of this one”. Chip “Warmer light”, Strong, “Grow 2 from this”. A new column appears level with take 2, a blue line draws to it, and two dawn-lit fog photographs land.",
+      motion: "Phone: framed on the parent take and the new branch. The inspector controls get their own close cut first.",
+      caption: "Change one and it branches. Nothing is overwritten." },
+    { tc: "0:30–0:35", title: "Name it", layout: { surface: "board", cols: 2, inspector: true }, box: [1260, 560, 340, 300],
+      screen: "Name it fog-climb, then Use. “Saved as @fog-climb”, and the emerald @fog-climb badge on the take.",
+      motion: "Close on the name field.", caption: "Saved by name, for you and your agent." },
+    { tc: "0:35–0:41", title: "On the page", layout: { surface: "page" }, box: [80, 260, 520, 520],
+      screen: "Home's Journal row, focused. Right-click the first story's photograph › Replace image › @fog-climb. The page reloads with it.",
+      motion: "Real speed for the swap.", caption: "Saved to .caret/assets, versioned with the design." },
+    { tc: "0:41–0:45", title: "Two more kinds", layout: { surface: "doc" }, box: [400, 160, 600, 520],
+      screen: "A logo or mark: Vahl's V mark, shown at size and at 20px. An animated background: fog drifting over a dark road, running live; one knob dragged and the fog thickens.",
+      motion: "Two shots, 2s each, hard cuts.", caption: "Logos as vectors. Backgrounds as code." },
+  ],
+  3: [
+    { tc: "0:00–0:03", title: "The result first", layout: { surface: "page" }, box: [560, 280, 560, 460],
+      screen: "The Strand page's spec list, already rebuilt as a two-column table.",
+      motion: "Still. Hard cut.", caption: null },
+    { tc: "0:03–0:10", title: "Select and resize", layout: { surface: "page", sidebar: true }, box: [80, 240, 560, 560],
+      screen: "Strand page, focused, react-grab on. Click the cockpit photograph: purple selection outline and handles; the property sidebar slides in and the chat steps aside. Drag the right handle. Toast: “Width 720px ✓”.",
+      motion: "Drag at hand speed, 700ms.", caption: "Drag an edge. The width is written into the page." },
+    { tc: "0:10–0:24", title: "Paint the part you mean", layout: { surface: "page" }, box: [560, 280, 600, 520], key: true,
+      screen: "The ✎ button: crosshair. Drag a rectangle over the spec list. The prompt under it: “Make the specs a two-column table”. Send. The list glows blue; the pill reads “Working on it — “Make the specs a two-column table””. Then “✓ Edit applied” and the table.",
+      motion: "Working time compressed by a cut while the pill is up.", caption: "Paint the part you mean. Say what you want." },
+    { tc: "0:24–0:38", title: "Three takes at once", layout: { surface: "board", inspector: true }, box: [30, 110, 800, 700],
+      screen: "Home, ⚗ Experiment. “What should the takes explore?”: “a darker hero that leads with the bike”. Generate 3 takes. The board: The page now, then three takes with shimmer and timers, landing. Pick one. Use this one.",
+      motion: "Phone: the board's column of takes, tall and narrow. Desktop: all three side by side.",
+      caption: "Three takes at once. Keep one." },
+    { tc: "0:38–0:47", title: "A design skill", layout: { surface: "cards", chat: true }, box: [200, 480, 860, 260],
+      screen: "Skills. Browse: Frontend Design, Impeccable, Design Taste, Design Engineering, shadcn/ui, Web Interface Guidelines. Install Design Engineering. Installed. The chat chip now reads “Skill: Design Engineering”.",
+      motion: "Ends on a push to the chat chip.", caption: "Pick the design skill the AI follows." },
+    { tc: "0:47–0:57", title: "Libraries the AI can search", layout: { surface: "page", chat: true }, box: [1220, 44, 380, 856],
+      screen: "Libraries, Installed: shadcn registries, Aceternity UI, Lazyweb, each Ready. In the chat: “Add three rider quotes under the Strand’s specs”. The writing card, then the quotes section on the page in Vahl's type and colours.",
+      motion: "Phone: the chat panel fills the frame, then a cut to the new section.", caption: "Real component libraries, styled by your tokens." },
+    { tc: "0:57–1:00", title: "End card", layout: { card: true }, box: [240, 300, 1120, 300],
+      screen: "Same end card.", motion: "200ms fade.", caption: null },
+  ],
+};
+
+const FRAMES = {
+  1: [
+    ["0", "Phone frame on Home's headline, in the focused view. The page has just opened."],
+    ["0–36", "Cursor travels to the headline on a slight arc (600ms). Pink hover outline on arrival."],
+    ["36–48", "Pause 200ms, then right-click. The menu opens at the cursor: “Home.h1”, then its items."],
+    ["48–84", "Cursor moves down the menu to “Edit text” (600ms); each row's hover passes under it."],
+    ["84–96", "Click. The headline becomes editable; I-beam cursor."],
+    ["96–132", "Select “the long, wet way round” (double-click and drag)."],
+    ["132–228", "Type “two hundred wet days a year” at 55ms a character with seeded jitter."],
+    ["228–240", "Enter. Toast “Edit applied” at the top centre."],
+    ["240–288", "Hold 800ms on the page with the toast."],
+    ["288", "Cut to the editor, framed on the changed line in pages/home/index.tsx."],
+    ["288–300", "The line highlight fades up (200ms)."],
+    ["300–420", "Caption fades in. Hold 2s. This is the payoff, so nothing else moves."],
+  ],
+  2: [
+    ["0", "Phone frame on the First takes column, four fog photographs."],
+    ["0–36", "Cursor to take 2 (600ms). Its hover bar fades in: Use, Change, maximise."],
+    ["36–48", "Click. Blue selected outline."],
+    ["48", "Cut to the inspector, close: “Change it · grows 2 takes out of this one”."],
+    ["48–84", "Cursor to “Warmer light”, click. The chip turns accent."],
+    ["84–108", "Click Strong. Hint: “Keeps the subject; framing and light may change.”"],
+    ["108–144", "Cursor to “Grow 2 from this”, click."],
+    ["144", "Cut back to the board, framed on take 2 and the space to its right."],
+    ["144–180", "The new branch box appears one column right; the blue line draws from take 2 to it."],
+    ["180–240", "Two takes in the branch: “waiting…”, then “making…”."],
+    ["240", "Visible cut: time compressed."],
+    ["240–360", "Two dawn-lit fog photographs land, one after the other. Caption. Hold 2s at 1x."],
+  ],
+  3: [
+    ["0", "Phone frame on the Strand page's spec list."],
+    ["0–30", "Cursor to the ✎ button (500ms). Click. Crosshair cursor and the faint overlay."],
+    ["30–90", "Drag from the top-left of the list to its bottom-right (1000ms). The blue rectangle follows."],
+    ["90–102", "Release. The prompt appears 8px under the rectangle, focused."],
+    ["102–228", "Type “Make the specs a two-column table” at 50ms a character."],
+    ["228–240", "Enter. Overlay clears; the list glows blue; the pill “Working on it — …” with its dotted spinner."],
+    ["240–330", "Hold 1.5s on the working state at 1x, so it reads as real work."],
+    ["330", "Visible cut: time compressed."],
+    ["330–360", "The table renders in place. Pill: “✓ Edit applied”."],
+    ["360–480", "Caption. Hold 2s. Camera still."],
+  ],
+};
+
+document.querySelectorAll(".beats").forEach((el) => {
+  el.innerHTML = FILMS[el.dataset.film].map((b) => `
+    <article class="beat">
+      <div>
+        <div class="frames">
+          <figure>${diagram(b, "phone")}<figcaption>Phone 4:5</figcaption></figure>
+          <figure>${diagram(b, "desk")}<figcaption>Desktop 16:9</figcaption></figure>
+        </div>
+        <span class="tc">${b.tc}${b.key ? " · key moment" : ""}</span>
+      </div>
+      <div>
+        <h3>${b.title}</h3>
+        <dl class="fields">
+          <dt>On screen</dt><dd>${b.screen}</dd>
+          <dt>Camera</dt><dd>${b.motion}</dd>
+          <dt>Caption</dt><dd>${b.caption ? `<span class="caption">${b.caption}</span><span class="draft">${b.owner ? "YOUR WORDS" : "DRAFT"}</span>` : '<span class="muted">None</span>'}</dd>
+        </dl>
+        ${b.staged ? `<p class="staged">${b.staged}</p>` : ""}
+      </div>
+    </article>`).join("");
+});
+document.querySelectorAll("table[data-frames]").forEach((t) => {
+  t.innerHTML = `<thead><tr><th>Frames (60fps)</th><th>What happens</th></tr></thead><tbody>` +
+    FRAMES[t.dataset.frames].map(([f, d]) => `<tr><td class="f">${f}</td><td>${d}</td></tr>`).join("") + `</tbody>`;
+});
+</script>

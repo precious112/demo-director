@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-format="phone">
+<head>
+<meta charset="utf-8">
+<title>demo-director stage</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="stage.css">
+</head>
+<body>
+  <!-- The camera moves #world. Everything inside it is written in world pixels
+       (the app's own layout units); the shell handles zoom and pan. -->
+  <div id="stage">
+    <div id="world"></div>
+
+    <!-- Screen-space overlays. The shell owns these; a project only styles them. -->
+    <div id="caption" role="presentation"></div>
+    <div id="card" role="presentation"></div>
+    <div id="cursor" aria-hidden="true"></div>
+  </div>
+
+  <script src="stage.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "demo-director",
+  "displayName": "demo-director",
+  "version": "0.1.0",
+  "description": "Direct and build product demo videos: faithful walkthroughs of a real-looking app, and motion-design films that are not a walkthrough. Plans a storyboard for approval, then renders frame-accurate films with Playwright and ffmpeg.",
+  "author": { "name": "precious112", "url": "https://github.com/precious112" },
+  "homepage": "https://github.com/precious112/demo-director",
+  "repository": "https://github.com/precious112/demo-director",
+  "license": "MIT",
+  "keywords": ["demo", "video", "motion-design", "storyboard", "walkthrough", "launch", "promo", "skill"]
+}

@@ -1,0 +1,385 @@
+<title>code-slowmo Film Storyboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: intro, then one block per round (a strip of key frames over a 0–42s ruler, notes and captions below).
+   Palette and type are code-slowmo's own page tokens, dark first, so the plan looks like the film it describes. */
+:root {
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1C2622; --line:#2D3A35; --line-soft:#232E2A;
+  --ink:#E2EAE6; --muted:#97A7A0; --faint:#6A7A74;
+  --hot:#4A3E0E; --hot-ink:#FFE38A;
+  --you:#F0A23A; --lib:#A88BF2; --undo:#6FA8F0; --data:#3DC79D; --screen:#F0729E;
+  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",sans-serif;
+  --sans:"Instrument Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --line:#C9D2CE; --line-soft:#DCE3DF;
+    --ink:#14201C; --muted:#56655F; --faint:#8A9893; --hot:#FFF1B8; --hot-ink:#5A4300;
+    --you:#A86200; --lib:#7148C8; --undo:#2F6FC0; --data:#0A7F60; --screen:#BC2F63;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface-2:#E7ECE9; --line:#C9D2CE; --line-soft:#DCE3DF;
+  --ink:#14201C; --muted:#56655F; --faint:#8A9893; --hot:#FFF1B8; --hot-ink:#5A4300;
+  --you:#A86200; --lib:#7148C8; --undo:#2F6FC0; --data:#0A7F60; --screen:#BC2F63;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15.5px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 48px 96px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.12; }
+h1 { font-size: clamp(30px, 4.6vw, 46px); font-weight: 700; letter-spacing: -0.015em; }
+h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 700; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--surface-2); border-radius: 4px; padding: 0 4px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 17px; color: var(--muted); max-width: 68ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+section.block { margin-top: 64px; display: flex; flex-direction: column; gap: 18px; }
+ul.plain { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; max-width: 76ch; }
+
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.spec { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.spec strong { font-size: 15px; }
+.spec p { font-size: 14px; color: var(--muted); }
+
+/* ruler */
+.ruler { display: flex; flex-direction: column; gap: 6px; }
+.bar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.bar a { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; color: var(--ink); text-decoration: none; border-right: 1px solid var(--bg); min-width: 0; overflow: hidden; white-space: nowrap; }
+.bar a:last-child { border-right: 0; }
+.bar a:hover { filter: brightness(1.2); }
+.s-type { background: var(--surface-2); }
+.s-map { background: color-mix(in srgb, var(--data) 30%, var(--surface)); }
+.s-flow { background: color-mix(in srgb, var(--undo) 30%, var(--surface)); }
+.s-trace { background: color-mix(in srgb, var(--you) 30%, var(--surface)); }
+.ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 9px; border-radius: 2px; display: inline-block; border: 1px solid var(--line); }
+
+/* rounds */
+.round { display: flex; flex-direction: column; gap: 18px; padding-block: 32px; border-top: 1px solid var(--line); scroll-margin-top: 16px; }
+.round-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.tc { font-family: var(--mono); font-size: 12.5px; color: var(--you); font-variant-numeric: tabular-nums; }
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.strip.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kf { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; }
+.kf figcaption { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; gap: 1px; }
+.kf figcaption b { font-family: var(--mono); font-weight: 500; font-size: 11.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* a 4:5 film frame, drawn small */
+.fr { aspect-ratio: 4 / 5; background: #0E1412; border: 1px solid var(--line-soft); border-radius: 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8% 7%; gap: 6%; }
+.fr .pips { position: absolute; top: 5%; left: 7%; right: 7%; display: flex; gap: 4px; }
+.fr .pips i { flex: 1; height: 3px; border-radius: 2px; background: #2D3A35; }
+.fr .pips i.on { background: #E2EAE6; }
+.fr .pips i.done { background: #6A7A74; }
+.cmp { width: 100%; background: #151D1A; border: 1px solid #2D3A35; border-radius: 10px; padding: 8px 9px 7px; display: flex; flex-direction: column; gap: 8px; }
+.cmp .txt { font-size: 10.5px; line-height: 1.4; color: #E2EAE6; min-height: 2.8em; }
+.cmp .ph { color: #6A7A74; }
+.cmp .bar2 { display: flex; align-items: center; justify-content: space-between; }
+.cmp .chip { font-family: var(--mono); font-size: 8px; color: #97A7A0; border: 1px solid #2D3A35; border-radius: 99px; padding: 0 6px; }
+.cmp .send { width: 16px; height: 16px; border-radius: 50%; background: #E2EAE6; display: grid; place-items: center; }
+.cmp .send svg { width: 9px; height: 9px; }
+.cmp .send.idle { background: #2D3A35; }
+.cmp .send.press { transform: scale(.86); }
+.cmp .cur { display: inline-block; width: 1px; height: 11px; background: #E2EAE6; vertical-align: -2px; margin-left: 1px; }
+.fr .q { font-family: var(--mono); font-size: 8px; color: #97A7A0; letter-spacing: .04em; align-self: flex-start; }
+.fr .cap { font-family: var(--display); font-weight: 600; color: #E2EAE6; font-size: 13px; line-height: 1.2; text-align: center; text-wrap: balance; }
+.fr .cap.big { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.fr .cap.dim { color: #6A7A74; }
+.fr img { width: 100%; height: auto; border-radius: 5px; border: 1px solid #2D3A35; display: block; }
+.fr .ghost { position: absolute; border: 1.5px dashed #F0A23A; border-radius: 8px; }
+.fr .arrow { position: absolute; color: #F0A23A; font-size: 18px; line-height: 1; }
+.fr .fill { position: absolute; inset: 0; }
+
+.notes { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; }
+.fields { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 8px 14px; font-size: 14.5px; align-content: start; }
+.fields dt { color: var(--muted); font-size: 12px; padding-top: 2px; font-family: var(--mono); }
+.fields dd { margin: 0; min-width: 0; }
+.caps { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; align-self: start; min-width: 0; }
+.caps ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.caps li { display: flex; flex-direction: column; gap: 2px; }
+.caps .line { font-family: var(--display); font-weight: 600; font-size: 19px; line-height: 1.25; }
+.caps .meta { font-family: var(--mono); font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.caps .alt { font-size: 13.5px; color: var(--muted); }
+.typed { font-family: var(--mono); font-size: 13.5px; background: var(--surface-2); border-radius: 6px; padding: 6px 10px; display: block; }
+
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.qq { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.qq .rec { font-size: 13.5px; color: var(--muted); }
+.qq .rec b { color: var(--data); font-weight: 600; }
+
+@media (max-width: 860px) {
+  .strip, .strip.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .notes { grid-template-columns: minmax(0, 1fr); }
+  .bar a { font-size: 0; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="up" viewBox="0 0 10 10"><path d="M5 8.5V1.8M2 4.6 5 1.6l3 3" fill="none" stroke="#0E1412" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>
+
+<div class="wrap">
+  <header class="stack">
+    <span class="eyebrow">code-slowmo · promo film · storyboard v3, for review</span>
+    <h1>Type a question. Watch the code answer.</h1>
+    <p class="lede">A 35-second motion piece for social. No app, no terminal: one composer box on a calm dark field. Each round types a question, sends it, and the box opens out into the visualization that answers it. The visualization holds for 5 seconds (6 for the guess round) while it plays, then folds back into the box for the next question. Three rounds, one for each kind of picture: the system map, the step-by-step timeline and the line-by-line run.</p>
+    <p class="lede">The visualization frames are real stills from the example pages in the repo. The composer and caption frames are drawn small, at the 4:5 phone shape.</p>
+  </header>
+
+  <section class="block">
+    <span class="eyebrow">The motion language</span>
+    <div class="specs">
+      <div class="spec"><strong>The box becomes the answer</strong><p>On send, the composer's outline grows into the visualization's card in one 700ms move. The typed question rides up and settles as a small label above the card. This is the film's signature move. It plays in every round, so the viewer learns the rhythm.</p></div>
+      <div class="spec"><strong>The picture builds itself</strong><p>As the card opens, its pieces arrive in order with a 40ms stagger: map areas, timeline lanes, lines of code. Then the page plays its own steps: arrows draw, values flash yellow, blocks swap.</p></div>
+      <div class="spec"><strong>Five seconds, one idea</strong><p>Each hold shows one thing the picture does, with one caption. The camera drifts in by about 4% and makes at most one small reframe. A cursor makes the one or two clicks a reader would make.</p></div>
+      <div class="spec"><strong>Three pips keep score</strong><p>A thin three-part bar at the top shows map, timeline, line by line. Each fills as its round plays, so viewers know how much is left and see that the pictures zoom in, step by step.</p></div>
+    </div>
+    <ul class="plain">
+      <li>Moves ease on <code>cubic-bezier(.7,0,.2,1)</code> for the morphs and <code>cubic-bezier(.16,1,.3,1)</code> for arrivals. A small settle on landing, no bounce.</li>
+      <li>Captions rise 12px and fade in over 300ms, line by line, in Bricolage Grotesque under the card. Out with a 200ms fade.</li>
+      <li>Everything stays in code-slowmo's own colours on its flat dark ground: no gradients, glows or particles. The life comes from things moving with intent.</li>
+      <li>Silent by default, with cut points on the sends and the morphs if you want to add music later.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <span class="eyebrow">The film at a glance · 35.5s</span>
+    <div class="ruler" role="img" aria-label="Intro 3 seconds, three rounds of 9 to 10 seconds each, outro 5 seconds.">
+      <div class="bar">
+        <a class="s-type" href="#intro" style="flex:3">intro</a>
+        <a class="s-type" href="#r1" style="flex:2.4">type</a>
+        <a class="s-map" href="#r1" style="flex:6.3">1 · map</a>
+        <a class="s-type" href="#r2" style="flex:2.7">type</a>
+        <a class="s-flow" href="#r2" style="flex:6.3">2 · timeline</a>
+        <a class="s-type" href="#r3" style="flex:2.5">type</a>
+        <a class="s-trace" href="#r3" style="flex:7.3">3 · line by line</a>
+        <a class="s-type" href="#outro" style="flex:5">outro</a>
+      </div>
+      <div class="ticks"><span>0:00</span><span>0:10</span><span>0:20</span><span>0:30</span><span>0:35.5</span></div>
+      <div class="legend"><span><i class="sw s-type"></i>Composer and type</span><span><i class="sw s-map"></i>System map</span><span><i class="sw s-flow"></i>Timeline</span><span><i class="sw s-trace"></i>Line by line</span></div>
+    </div>
+  </section>
+
+  <!-- INTRO -->
+  <section class="block round" id="intro">
+    <div class="round-head"><h2>Intro · the promise</h2><span class="tc">0:00.0 – 0:03.0</span></div>
+    <div class="strip three">
+      <figure class="kf">
+        <div class="fr"><div class="cap big">Understand code</div></div>
+        <figcaption><b>0:00.2</b>The first line rises in from a mask.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="cap big">Understand code by watching it run in slow motion.</div></div>
+        <figcaption><b>0:01.0</b>The rest follows line by line. Held 1.4s.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="cap dim" style="font-size:10px">Understand code by watching it run in slow motion.</div>
+          <div class="cmp"><div class="txt"><span class="ph">Ask about your code…</span></div><div class="bar2"><span class="chip">code-slowmo</span><span class="send idle"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:02.4</b>The line shrinks up and dims as the composer rises into the centre.</figcaption>
+      </figure>
+    </div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Motion</dt><dd>Each line of the promise rises from behind a mask, 80ms apart. At 0:02.2 the whole line scales to 55% and moves up as the composer slides up from 24px below and fades in. The line fades out by 0:03.0.</dd>
+        <dt>Composer</dt><dd>Unbranded: a rounded box, placeholder “Ask about your code…”, a small <code>code-slowmo</code> chip so the viewer knows which skill is on, and a round send button that lights up once there is text.</dd>
+      </dl>
+      <div class="caps"><span class="eyebrow">Caption</span><ol><li><span class="line">Understand code by watching it run in slow motion.</span><span class="meta">0:00.2 – 0:02.8 · the README's first line, unchanged</span></li></ol></div>
+    </div>
+  </section>
+
+  <!-- ROUND 1 -->
+  <section class="block round" id="r1">
+    <div class="round-head"><h2>Round 1 · the system map</h2><span class="tc">0:03.0 – 0:11.7</span></div>
+    <div class="strip">
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="on"></i><i></i><i></i></div>
+          <div class="cmp"><div class="txt">I'm new to Puck. Give me the big pic<span class="cur"></span></div><div class="bar2"><span class="chip">code-slowmo</span><span class="send"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:03.3 – 0:05.1</b>Typing, about 45ms a character.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="on"></i><i></i><i></i></div>
+          <div class="cmp"><div class="txt">I'm new to Puck. Give me the big picture.</div><div class="bar2"><span class="chip">code-slowmo</span><span class="send press"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:05.3</b>Send pressed: the button dips to 86% and springs back.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="on"></i><i></i><i></i></div>
+          <span class="q" style="position:absolute; top:12%; left:7%">I'M NEW TO PUCK. GIVE ME THE BIG PICTURE.</span>
+          <div class="ghost" style="left:7%; right:7%; top:42%; height:16%"></div>
+          <div class="ghost" style="left:4%; right:4%; top:22%; bottom:24%; border-style:solid; border-color:#97A7A0"></div>
+          <span class="arrow" style="left:47%; top:34%">↕</span></div>
+        <figcaption><b>0:05.4 – 0:06.1</b>The box grows into the card. The question rides up and becomes the label.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="justify-content:flex-start; padding-top:12%"><div class="pips"><i class="on"></i><i></i><i></i></div>
+          <span class="q">I'M NEW TO PUCK. GIVE ME THE BIG PICTURE.</span>
+          <img src="stills/drop-map-open.jpg" alt="The Puck system map with the Drag handling area open: dnd-kit, Drag handler and Area finder, with coloured arrows to the stores." width="1180" height="770">
+          <div class="cap" style="margin-top:auto">See the whole system at once.</div></div>
+        <figcaption><b>0:06.1 – 0:11.1</b>The map plays, 5s. Real still, from <code>puck-drop.html</code>.</figcaption>
+      </figure>
+    </div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Typed</dt><dd><span class="typed">I'm new to Puck. Give me the big picture.</span>One of the README's own example questions, with the repo named.</dd>
+        <dt>Build-in</dt><dd>The six areas of the map land one after another, top to bottom (40ms apart), then the arrows draw along their paths over 500ms.</dd>
+        <dt>Hold</dt><dd>Build-in done by 0:06.6. At 0:07.0 the cursor clicks <b>Drag handling</b>. The area opens into its parts: dnd-kit, Drag handler, Area finder, and the coloured arrows to the two stores light up. The camera eases in toward that row over 1s. Still from 0:08.5 to 0:11.1.</dd>
+        <dt>Out</dt><dd>0:11.1 – 0:11.7: the card folds back into the composer (the reverse move). The text clears with a quick wipe to the left. The first pip finishes filling.</dd>
+      </dl>
+      <div class="caps"><span class="eyebrow">Caption</span><ol>
+        <li><span class="line">See the whole system at once.</span><span class="meta">0:06.4 – 0:10.9</span><span class="alt">Alts: “Every part, and who it talks to.” · “Click a part to open it.”</span></li>
+      </ol></div>
+    </div>
+  </section>
+
+  <!-- ROUND 2 -->
+  <section class="block round" id="r2">
+    <div class="round-head"><h2>Round 2 · one action, step by step</h2><span class="tc">0:11.7 – 0:20.7</span></div>
+    <div class="strip">
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="done"></i><i class="on"></i><i></i></div>
+          <div class="cmp"><div class="txt">What happens when I move a block and pre<span class="cur"></span></div><div class="bar2"><span class="chip">code-slowmo</span><span class="send"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:11.9 – 0:14.1</b>Typing.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="done"></i><i class="on"></i><i></i></div>
+          <span class="q" style="position:absolute; top:12%; left:7%">WHAT HAPPENS WHEN I MOVE A BLOCK AND PRESS UNDO?</span>
+          <div class="ghost" style="left:7%; right:7%; top:42%; height:16%"></div>
+          <div class="ghost" style="left:4%; right:4%; top:22%; bottom:24%; border-style:solid; border-color:#97A7A0"></div>
+          <span class="arrow" style="left:47%; top:34%">↕</span></div>
+        <figcaption><b>0:14.3 – 0:15.1</b>Send, then the same opening move.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="justify-content:flex-start; padding-top:12%"><div class="pips"><i class="done"></i><i class="on"></i><i></i></div>
+          <span class="q">WHAT HAPPENS WHEN I MOVE A BLOCK AND PRESS UNDO?</span>
+          <img src="stills/flow-6.jpg" alt="Timeline at step 6: the row 250ms later add copy is lit, and the undo list position turns yellow." width="1180" height="668">
+          <div class="cap" style="margin-top:auto">Follow one action, step by step.</div></div>
+        <figcaption><b>0:17.0</b>Jump to step 6: the copy is saved, the position turns yellow.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="justify-content:flex-start; padding-top:12%"><div class="pips"><i class="done"></i><i class="on"></i><i></i></div>
+          <span class="q">WHAT HAPPENS WHEN I MOVE A BLOCK AND PRESS UNDO?</span>
+          <img src="stills/flow-14.jpg" alt="Timeline at step 14: Hero is back above Text on the screen mock." width="1180" height="668">
+          <div class="cap" style="margin-top:auto">Follow one action, step by step.</div></div>
+        <figcaption><b>0:18.4</b>Jump to step 14: the undo puts Hero back on top. Hold.</figcaption>
+      </figure>
+    </div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Typed</dt><dd><span class="typed">What happens when I move a block and press undo?</span></dd>
+        <dt>Build-in</dt><dd>The seven lane labels drop in left to right (40ms apart), then the dotted lanes draw down.</dd>
+        <dt>Hold</dt><dd>Three moments instead of all 14 steps. 0:15.8 a click on <b>Next</b>: Text moves above Hero on the screen mock. 0:17.0 the cursor clicks the step bar at <b>saved</b>: the copy is added and the position flashes yellow. 0:18.4 a click at <b>done</b>: the undo has put Hero back on top. Each jump uses the page's real step slider. The camera stays wide enough to see the lit arrow and the screen mock together. Still from 0:18.6 to 0:20.1.</dd>
+        <dt>Out</dt><dd>0:20.1 – 0:20.7: folds back into the composer. Second pip fills.</dd>
+      </dl>
+      <div class="caps"><span class="eyebrow">Caption</span><ol>
+        <li><span class="line">Follow one action, step by step.</span><span class="meta">0:15.4 – 0:19.9</span><span class="alt">Alts: “Watch the data change as it runs.” · “Yellow means it just changed.”</span></li>
+      </ol></div>
+    </div>
+  </section>
+
+  <!-- ROUND 3 -->
+  <section class="block round" id="r3">
+    <div class="round-head"><h2>Round 3 · the real code, line by line</h2><span class="tc">0:20.7 – 0:30.5</span></div>
+    <div class="strip">
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="done"></i><i class="done"></i><i class="on"></i></div>
+          <div class="cmp"><div class="txt">What does history.back() do, line by<span class="cur"></span></div><div class="bar2"><span class="chip">code-slowmo</span><span class="send"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:20.9 – 0:22.9</b>Typing.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="pips"><i class="done"></i><i class="done"></i><i class="on"></i></div>
+          <span class="q" style="position:absolute; top:12%; left:7%">WHAT DOES HISTORY.BACK() DO, LINE BY LINE?</span>
+          <div class="ghost" style="left:7%; right:7%; top:42%; height:16%"></div>
+          <div class="ghost" style="left:4%; right:4%; top:22%; bottom:24%; border-style:solid; border-color:#97A7A0"></div>
+          <span class="arrow" style="left:47%; top:34%">↕</span></div>
+        <figcaption><b>0:23.1 – 0:23.9</b>Send, then the opening move.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="justify-content:flex-start; padding-top:12%"><div class="pips"><i class="done"></i><i class="done"></i><i class="on"></i></div>
+          <span class="q">WHAT DOES HISTORY.BACK() DO, LINE BY LINE?</span>
+          <img src="stills/trace-ask.jpg" alt="Line 103 highlighted and a Guess first question with three options." width="1180" height="769">
+          <div class="cap" style="margin-top:auto">It asks you to guess first.</div></div>
+        <figcaption><b>0:24.9</b>The guess appears. The camera pushes in on it.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="justify-content:flex-start; padding-top:12%"><div class="pips"><i class="done"></i><i class="done"></i><i class="on"></i></div>
+          <span class="q">WHAT DOES HISTORY.BACK() DO, LINE BY LINE?</span>
+          <img src="stills/trace-answered.jpg" alt="The answer The whole saved copy marked right, with the reason." width="1180" height="769">
+          <div class="cap" style="margin-top:auto">It asks you to guess first.</div></div>
+        <figcaption><b>0:27.6</b>Answer picked, marked right. Held 2.3s.</figcaption>
+      </figure>
+    </div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Typed</dt><dd><span class="typed">What does history.back() do, line by line?</span>Shaped like the README's <code>reconcileChildren</code> example. <code>history.back()</code> is the function the page steps through.</dd>
+        <dt>Build-in</dt><dd>The code lines sweep in from top to bottom (15ms apart, fast like a scroll), then the right-hand panels land.</dd>
+        <dt>Hold</dt><dd>6s, one second more than the others, because the question needs reading time. The card opens two steps before the guess, so the viewer sees the yellow line jump into <code>back()</code> (lines 99–103) and a value flash. 0:24.9 the “Guess first” box opens and the camera pushes in on it. The question holds about 2.4s while the cursor rests on the options, then it picks “The whole saved copy, to replace the current page”. The page marks it right and explains why. Still from 0:27.6 to 0:29.9.</dd>
+        <dt>Out</dt><dd>0:29.9 – 0:30.5: folds back into the composer. Third pip fills, then all three pips fade.</dd>
+      </dl>
+      <div class="caps"><span class="eyebrow">Caption</span><ol>
+        <li><span class="line">It asks you to guess first.</span><span class="meta">0:24.4 – 0:29.7</span><span class="alt">Alts: “The real code, one line at a time.” · “Guess, then see if you were right.”</span></li>
+      </ol></div>
+    </div>
+  </section>
+
+  <!-- OUTRO -->
+  <section class="block round" id="outro">
+    <div class="round-head"><h2>Outro · install it</h2><span class="tc">0:30.5 – 0:35.5</span></div>
+    <div class="strip three">
+      <figure class="kf">
+        <div class="fr"><div class="cmp"><div class="txt">/plugin install code-slowmo@code-slo<span class="cur"></span></div><div class="bar2"><span class="chip">code-slowmo</span><span class="send"><svg><use href="#up"/></svg></span></div></div></div>
+        <figcaption><b>0:30.7 – 0:31.7</b>The install command types in, faster than the questions.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr"><div class="ghost" style="left:7%; right:7%; top:42%; height:16%"></div><div class="ghost" style="left:12%; right:12%; top:32%; bottom:32%; border-style:solid; border-color:#97A7A0"></div></div>
+        <figcaption><b>0:31.9 – 0:32.5</b>Send. This time the box closes in on itself instead of opening out.</figcaption>
+      </figure>
+      <figure class="kf">
+        <div class="fr" style="gap:4%">
+          <div class="cap big" style="font-size:22px">code-slowmo</div>
+          <div class="cap dim" style="font-size:10.5px; font-family:var(--sans); font-weight:500; color:#97A7A0">A skill for Claude Code, Codex, Cursor and OpenCode.</div>
+          <div style="font-family:var(--mono); font-size:8.5px; color:#E2EAE6; background:#1C2622; border-radius:4px; padding:2px 6px; margin-top:4%">npx skills add precious112/code-slowmo</div>
+          <div style="font-family:var(--mono); font-size:8px; color:#6A7A74">github.com/precious112/code-slowmo</div>
+        </div>
+        <figcaption><b>0:32.5 – 0:35.5</b>End card, held 3s.</figcaption>
+      </figure>
+    </div>
+    <div class="notes">
+      <dl class="fields">
+        <dt>Motion</dt><dd>The composer narrows to a short pill, then the wordmark rises out of where it was. The other lines follow 120ms apart. Then it holds still. The last frame is the end card itself, so it doubles as the post's thumbnail.</dd>
+        <dt>Claims</dt><dd>Every line is from the README: the agents it installs into, the <code>npx</code> command, the repository.</dd>
+      </dl>
+      <div class="caps"><span class="eyebrow">End card text</span><ol>
+        <li><span class="line">code-slowmo</span><span class="meta">wordmark</span></li>
+        <li><span class="line" style="font-size:16px">A skill for Claude Code, Codex, Cursor and OpenCode.</span><span class="meta">draft</span><span class="alt">Alt: “Understand code by watching it run in slow motion.” (if the intro line moves elsewhere)</span></li>
+        <li><span class="line" style="font-size:16px; font-family:var(--mono)">npx skills add precious112/code-slowmo</span><span class="meta">the install line that works in most agents</span></li>
+      </ol></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <span class="eyebrow">How it will be made</span>
+    <ul class="plain">
+      <li>A stage page in <code>dev/motion-design-and-demo-videos/code-slowmo/</code>: the composer, captions and pips are drawn for the film. The visualizations are the real example pages, mounted inside the card and driven through their own buttons, so every arrow, yellow flash and answer is what the skill really produces.</li>
+      <li>The small frames above show the card at its desktop width, so it looks tiny in 4:5. In the film the camera does the work: it frames the half of the card that matters in each beat (map or side panel, arrows or screen mock, code or guess), so text reads at phone size.</li>
+      <li>Rendered frame by frame with Playwright on a paused clock at 60fps, then ffmpeg, the same pipeline as the Caret films.</li>
+      <li>Delivered as <code>code-slowmo-promo-4x5.mp4</code> (1080×1350, the main one for social) and <code>code-slowmo-promo-16x9.mp4</code>, plus versions under 10 MB for GitHub and X.</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <span class="eyebrow">Your call</span>
+    <div class="qs">
+      <div class="qq"><h3>1 · The captions</h3><p>One caption per round now, with two alternatives under each. Rewrite any of them, or tell me which alternatives you prefer.</p></div>
+      <div class="qq"><h3>2 · The time it really takes</h3><p>Building a page takes the agent a few minutes. The film skips that wait.</p><p class="rec"><b>My pick:</b> a tiny “a few minutes later” label in the corner for the 0.7s morph, so nobody feels misled. Easy to drop if you'd rather not.</p></div>
+      <div class="qq"><h3>3 · More rounds?</h3><p>The skill also makes a glossary of word cards and a side-by-side compare. Each extra round adds about 10s.</p><p class="rec"><b>My pick:</b> stay at three rounds. They are the ones the README leads with, and 35s suits social.</p></div>
+      <div class="qq"><h3>4 · Formats</h3><p>4:5 as the main cut for social feeds, and 16:9 for the README and YouTube.</p><p class="rec"><b>My pick:</b> both, built from one script.</p></div>
+    </div>
+  </section>
+</div>

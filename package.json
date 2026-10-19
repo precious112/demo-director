@@ -1,0 +1,18 @@
+{
+  "name": "demo-director",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A skill and render kit for product walkthroughs and motion-design films.",
+  "license": "MIT",
+  "scripts": {
+    "example:still": "node skills/demo-director/assets/examples/walkthrough/film.mjs phone preview",
+    "example:render": "node skills/demo-director/assets/examples/walkthrough/film.mjs phone final",
+    "example:render:wide": "node skills/demo-director/assets/examples/walkthrough/film.mjs wide final",
+    "storyboard": "node skills/demo-director/scripts/build-storyboard.mjs",
+    "check-copy": "node skills/demo-director/scripts/check-copy.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}

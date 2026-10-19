@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>code-slowmo promo stage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Every visual here is set by seek(t). Nothing animates on its own, so any frame renders the same every time. */
+:root {
+  --bg:#0E1412; --surface:#151D1A; --surface-2:#1C2622; --line:#2D3A35;
+  --ink:#E2EAE6; --muted:#97A7A0; --faint:#6A7A74;
+  --display:"Bricolage Grotesque","Avenir Next",sans-serif;
+  --sans:"Instrument Sans",-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); overflow: hidden; }
+body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: antialiased; }
+#stage { position: relative; overflow: hidden; background: var(--bg); }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+
+#pips { display: flex; gap: 12px; }
+#pips .pip { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+#pips .track { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+#pips .fill { height: 100%; width: 0; background: var(--ink); }
+#pips .lbl { font-family: var(--mono); font-size: var(--pipfs); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+
+#intro { text-align: center; font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1.04; transform-origin: 50% 50%; }
+#intro .ln { display: block; overflow: hidden; padding-bottom: .08em; }
+#intro .ln span { display: inline-block; }
+
+#box { background: var(--surface); border: 1.5px solid var(--line); overflow: hidden; }
+#view { position: absolute; inset: 0; overflow: hidden; }
+#view iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: var(--bg); visibility: hidden; }
+#cmp { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; }
+#ctext { font-size: var(--cfs); line-height: 1.32; color: var(--ink); white-space: pre-wrap; }
+#ctext .ph { color: var(--faint); }
+#caret { display: inline-block; width: 2px; height: 1.1em; background: var(--ink); vertical-align: -0.18em; margin-left: 1px; }
+#cbar { display: flex; align-items: center; justify-content: space-between; }
+#chip { font-family: var(--mono); font-size: var(--chipfs); color: var(--muted); border: 1.5px solid var(--line); border-radius: 999px; padding: .2em .9em; display: inline-flex; align-items: center; gap: .55em; }
+#chip i { width: .55em; height: .55em; border-radius: 50%; background: #3DC79D; display: inline-block; }
+#send { border-radius: 50%; display: grid; place-items: center; }
+#send svg { width: 46%; height: 46%; }
+
+#fly { font-size: var(--cfs); line-height: 1.32; white-space: pre-wrap; transform-origin: 0 0; color: var(--ink); }
+#caption { font-family: var(--display); font-weight: 600; letter-spacing: -0.01em; text-align: center; white-space: nowrap; }
+#later { font-family: var(--mono); color: var(--muted); letter-spacing: .04em; display: flex; align-items: center; gap: .6em; }
+#later svg { width: 1.05em; height: 1.05em; }
+
+#end { display: flex; flex-direction: column; align-items: center; text-align: center; }
+#end .ln { display: block; overflow: hidden; padding-bottom: .06em; }
+#end .ln > span { display: inline-block; }
+#end .word { font-family: var(--display); font-weight: 700; letter-spacing: -0.025em; line-height: 1; }
+#end .sub { font-size: var(--endsub); color: var(--muted); font-weight: 500; }
+#end .cmd { font-family: var(--mono); font-size: var(--endcmd); background: var(--surface-2); border: 1.5px solid var(--line); border-radius: 10px; padding: .45em .9em; color: var(--ink); }
+#end .url { font-family: var(--mono); font-size: var(--endurl); color: var(--faint); }
+#cursor { width: var(--cur); height: auto; transform-origin: 3px 2px; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.45)); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="pips" class="abs">
+    <div class="pip"><div class="track"><div class="fill"></div></div><span class="lbl">Map</span></div>
+    <div class="pip"><div class="track"><div class="fill"></div></div><span class="lbl">Step by step</span></div>
+    <div class="pip"><div class="track"><div class="fill"></div></div><span class="lbl">Line by line</span></div>
+  </div>
+  <div id="intro" class="abs"></div>
+  <div id="box" class="abs">
+    <div id="view"></div>
+    <div id="cmp">
+      <div id="ctext"></div>
+      <div id="cbar"><span id="chip"><i></i>code-slowmo</span><span id="send"><svg viewBox="0 0 10 10"><path d="M5 8.4V1.9M2.1 4.7 5 1.8l2.9 2.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    </div>
+  </div>
+  <div id="fly" class="abs"></div>
+  <div id="caption" class="abs"></div>
+  <div id="later" class="abs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.2V8l2.6 1.6" stroke-linecap="round"/></svg>a few minutes later</div>
+  <div id="end" class="abs">
+    <span class="ln"><span class="word">code-slowmo</span></span>
+    <span class="ln"><span class="sub">A skill for Claude Code, Codex, Cursor and OpenCode.</span></span>
+    <span class="ln" style="margin-top:var(--endgap)"><span class="cmd">npx skills add precious112/code-slowmo</span></span>
+    <span class="ln" style="margin-top:calc(var(--endgap) * .55)"><span class="url">github.com/precious112/code-slowmo</span></span>
+  </div>
+  <svg id="cursor" class="abs" viewBox="0 0 24 36"><path d="M2 2v27.5l6.6-6.4 4.2 9.8 4.3-1.8-4.1-9.6h9.2Z" fill="#0b0b0b" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const FMT = new URLSearchParams(location.search).get("f") === "w" ? "w" : "p";
+const PORTRAIT = FMT === "p";
+const W = PORTRAIT ? 1080 : 1920, H = PORTRAIT ? 1350 : 1080;
+
+/* ---------- layout per format ---------- */
+const L = PORTRAIT ? {
+  pips: { x: 72, y: 60, w: 936 }, pipfs: 17,
+  region: { x: 40, y: 236, w: 1000, h: 880 },
+  labelGap: 22, labelScale: 0.66,
+  captionY: 1222, capfs: 52,
+  composer: { w: 900, h: 228, r: 26, pad: 30 }, cfs: 34, chipfs: 19, send: 58,
+  intro: { fs: 92, lines: ["Understand code by", "watching it run", "in slow motion."] },
+  later: { fs: 19, right: 56, bottom: 52 },
+  end: { word: 128, sub: 30, cmd: 25, url: 21, gap: 46 },
+  cur: 30, radius: 18,
+} : {
+  pips: { x: 120, y: 34, w: 1680 }, pipfs: 15,
+  region: { x: 120, y: 136, w: 1680, h: 790 },
+  labelGap: 18, labelScale: 0.62,
+  captionY: 990, capfs: 46,
+  composer: { w: 1040, h: 212, r: 24, pad: 28 }, cfs: 32, chipfs: 18, send: 54,
+  intro: { fs: 96, lines: ["Understand code by watching", "it run in slow motion."] },
+  later: { fs: 18, right: 64, bottom: 44 },
+  end: { word: 136, sub: 30, cmd: 24, url: 20, gap: 44 },
+  cur: 28, radius: 16,
+};
+
+/* ---------- timing (seconds), from the approved storyboard v3 ---------- */
+const TI = { linesIn: 0.2, out: 2.2, outEnd: 3.0 };
+const ROUNDS = [
+  { page: "puck-drop.html", demo: 0, vw: PORTRAIT ? 880 : 1440,
+    text: "I'm new to Puck. Give me the big picture.",
+    type: [3.3, 5.1], send: 5.3, morph: [5.4, 6.1], exit: [11.1, 11.7],
+    caption: { text: "See the whole system at once.", at: [6.4, 10.9] } },
+  { page: "puck-undo.html", demo: 1, vw: PORTRAIT ? 980 : 1440,
+    text: "What happens when I move a block and press undo?",
+    type: [11.9, 14.1], send: 14.3, morph: [14.4, 15.1], exit: [20.1, 20.7],
+    caption: { text: "Follow one action, step by step.", at: [15.4, 19.9] } },
+  { page: "puck-undo.html", demo: 3, vw: 1440,
+    text: "What does history.back() do, line by line?",
+    type: [20.9, 22.9], send: 23.1, morph: [23.2, 23.9], exit: [29.9, 30.5],
+    caption: { text: "It asks you to guess first.", at: [24.4, 29.7] } },
+];
+const OUTRO = { text: "/plugin install code-slowmo@code-slowmo", type: [30.7, 31.7], send: 31.9, close: [31.9, 32.5], end: 32.45 };
+const DURATION = 35.5;
+
+/* ---------- easing ---------- */
+function bez(x1, y1, x2, y2) {
+  const bx = t => 3*x1*t*(1-t)**2 + 3*x2*t*t*(1-t) + t**3, by = t => 3*y1*t*(1-t)**2 + 3*y2*t*t*(1-t) + t**3;
+  const dx = t => 3*x1*(1-t)**2 + 6*(x2-x1)*t*(1-t) + 3*(1-x2)*t*t;
+  return x => { if (x <= 0) return 0; if (x >= 1) return 1; let t = x; for (let i = 0; i < 10; i++) { const d = dx(t); if (Math.abs(d) < 1e-6) break; t = Math.min(1, Math.max(0, t - (bx(t) - x) / d)); } return by(t); };
+}
+const E = { morph: bez(.7, 0, .2, 1), out: bez(.16, 1, .3, 1), cam: bez(.45, 0, .2, 1), io: bez(.65, 0, .35, 1) };
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const lerpRect = (a, b, k) => ({ x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), w: lerp(a.w, b.w, k), h: lerp(a.h, b.h, k) });
+
+/* Seeded per-character times: 40–55ms rhythm with jitter, stretched to fill [a, b] exactly. */
+function typeTimes(text, a, b, seed) {
+  let s = seed; const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const gaps = [...text].map((ch, i) => (0.7 + rnd() * 0.6) * (/[?.,]/.test(text[i - 1] || "") ? 2.2 : 1) * (ch === " " ? 0.8 : 1));
+  const total = gaps.reduce((x, y) => x + y, 0); let acc = 0;
+  return gaps.map(g => a + ((acc += g) / total) * (b - a));
+}
+ROUNDS.forEach((r, i) => r.times = typeTimes(r.text, r.type[0], r.type[1], 11 + i * 7));
+OUTRO.times = typeTimes(OUTRO.text, OUTRO.type[0], OUTRO.type[1], 5);
+
+/* ---------- static setup ---------- */
+const stage = $("#stage");
+stage.style.width = W + "px"; stage.style.height = H + "px";
+const root = document.documentElement.style;
+root.setProperty("--pipfs", L.pipfs + "px"); root.setProperty("--cfs", L.cfs + "px"); root.setProperty("--chipfs", L.chipfs + "px");
+root.setProperty("--endsub", L.end.sub + "px"); root.setProperty("--endcmd", L.end.cmd + "px"); root.setProperty("--endurl", L.end.url + "px"); root.setProperty("--endgap", L.end.gap + "px");
+root.setProperty("--cur", L.cur + "px");
+const pips = $("#pips"); pips.style.width = L.pips.w + "px"; pips.style.transform = `translate(${L.pips.x}px, ${L.pips.y}px)`;
+const intro = $("#intro"); intro.style.fontSize = L.intro.fs + "px"; intro.style.width = W + "px";
+intro.innerHTML = L.intro.lines.map(l => `<span class="ln"><span>${l}</span></span>`).join("");
+$("#caption").style.fontSize = L.capfs + "px";
+const later = $("#later"); later.style.fontSize = L.later.fs + "px";
+$("#end .word").style.fontSize = L.end.word + "px";
+const box = $("#box"), cmp = $("#cmp"), ctext = $("#ctext"), send = $("#send"), fly = $("#fly"), view = $("#view"), cursorEl = $("#cursor");
+const C = L.composer;
+cmp.style.padding = `${C.pad}px ${C.pad}px ${C.pad - 6}px`;
+send.style.width = send.style.height = L.send + "px";
+fly.style.width = (C.w - 2 * C.pad) + "px";
+ctext.style.minHeight = (L.cfs * 1.32 * 2) + "px";
+const composerRect = { x: (W - C.w) / 2, y: (H - C.h) / 2 + (PORTRAIT ? 10 : 20), w: C.w, h: C.h };
+
+/* ---------- the visualizations: real pages in iframes ---------- */
+async function loadRound(r) {
+  const f = document.createElement("iframe");
+  f.src = "pages/" + r.page; f.width = r.vw; f.height = 7000;
+  f.style.width = r.vw + "px"; f.style.height = "7000px";
+  view.appendChild(f);
+  await new Promise(res => f.onload = res);
+  const d = f.contentDocument, w = f.contentWindow;
+  await d.fonts.ready;
+  d.documentElement.style.scrollBehavior = "auto";
+  // The page's own tooltip and focus ring never show in the film; no pointer is really there.
+  const st = d.createElement("style"); st.textContent = "#tip{display:none!important} *:focus{outline:none!important}"; d.head.appendChild(st);
+  r.frame = f; r.doc = d; r.win = w;
+  r.el = d.querySelectorAll(".demo")[r.demo];
+  return r;
+}
+/* Demo-local box of an element (iframe is never scrolled, so client rects are document rects). */
+function dbox(r, el) {
+  const a = el.getBoundingClientRect(), o = r.el.getBoundingClientRect();
+  return { x: a.left - o.left, y: a.top - o.top, w: a.width, h: a.height };
+}
+const fire = (el) => el.dispatchEvent(new r_MouseEvent(el, "click"));
+function r_MouseEvent(el, type) { return new el.ownerDocument.defaultView.MouseEvent(type, { bubbles: true, cancelable: true, view: el.ownerDocument.defaultView }); }
+const nextBtn = r => r.el.querySelector('[data-a="next"]');
+
+/* Per-round script: initial view, build-in pieces, camera moves, clicks. */
+function setupScripts() {
+  const [R1, R2, R3] = ROUNDS;
+
+  // Round 1: the system map.
+  {
+    const svg = R1.el.querySelector(".map svg");
+    const gs = [...svg.children].filter(n => n.tagName === "g");
+    R1.pieces = [
+      { els: [R1.el.querySelector(".demo-head")], at: 0 },
+      ...[...gs[0].children].map((n, i) => ({ els: [n], at: 0.06 + i * 0.05 })),
+      { els: gs.slice(1), at: 0.42, rise: 0 },
+      { els: [R1.el.querySelector(".side"), R1.el.querySelector(".tr")], at: 0.3 },
+    ];
+    const full = { x: 0, y: 0, w: R1.el.offsetWidth, h: R1.el.offsetHeight };
+    R1.view0 = full;
+    const area = [...R1.el.querySelectorAll(".area")].find(a => /Drag handling/.test(a.textContent));
+    R1.clicks = [{ at: 7.0, target: () => { const t = [...area.querySelectorAll("text")].find(x => /Drag handling/.test(x.textContent)) || area; return t; }, act: () => fire(area), appear: 6.25 }];
+    R1.cams = [];
+  }
+
+  // Round 2: the timeline. Clicking an arrow row jumps to that step (the page's own handler).
+  {
+    const svg = R2.el.querySelector(".flow svg");
+    const lanes = [...svg.querySelectorAll(".lane-h")], lifes = [...svg.querySelectorAll(".lifeline")];
+    const rows = [...svg.querySelectorAll(".msg")], phases = [...svg.querySelectorAll(".phase-line,.phase")];
+    R2.rows = rows;
+    R2.pieces = [
+      ...lanes.map((n, i) => ({ els: [n, lifes[i]], at: i * 0.045 })),
+      ...rows.map((n, i) => ({ els: [n], at: 0.2 + i * 0.022, rise: 8 })),
+      { els: phases, at: 0.3, rise: 0 },
+      ...[...R2.el.querySelectorAll(".flow-wrap .side > *")].map((n, i) => ({ els: [n], at: 0.16 + i * 0.07 })),
+      { els: [R2.el.querySelector(".tr")], at: 0.3 },
+    ];
+    const full = { x: 0, y: 0, w: R2.el.offsetWidth, h: R2.el.offsetHeight };
+    R2.view0 = PORTRAIT ? { x: 0, y: 0, w: full.w, h: dbox(R2, R2.el.querySelector(".flow-wrap .side .scr")).y + dbox(R2, R2.el.querySelector(".flow-wrap .side .scr")).h + 16 } : full;
+    const rowLabel = k => rows[k].querySelector("text") || rows[k];
+    R2.clicks = [
+      { at: 15.8, target: () => rowLabel(1), act: () => fire(rows[1]), appear: 15.15 },
+      { at: 17.0, target: () => rowLabel(5), act: () => fire(rows[5]) },
+      { at: 18.4, target: () => rowLabel(13), act: () => fire(rows[13]) },
+    ];
+    R2.cams = [];
+  }
+
+  // Round 3: line by line, opened two steps before the guess.
+  {
+    for (let k = 0; k < 4; k++) nextBtn(R3).click();
+    const code = R3.el.querySelector(".codepane");
+    R3.pieces = [
+      { els: [R3.el.querySelector(".filetabs")], at: 0 },
+      ...[...R3.el.querySelectorAll(".code > *")].map((n, i) => ({ els: [n], at: 0.05 + i * 0.016, rise: 10 })),
+      ...[...R3.el.querySelectorAll(".statepane .blk")].map((n, i) => ({ els: [n], at: 0.14 + i * 0.06 })),
+      { els: [R3.el.querySelector(".tr")], at: 0.3 },
+    ];
+    const cb = dbox(R3, code);
+    R3.view0 = PORTRAIT ? { x: 0, y: 0, w: cb.w + 2, h: cb.h - 18 } : { x: 0, y: 0, w: R3.el.offsetWidth, h: R3.el.offsetHeight };
+    R3.steps = [{ at: 24.2, act: () => nextBtn(R3).click() }, { at: 24.9, act: () => nextBtn(R3).click() }];
+    const opt = () => R3.el.querySelector(".ask .opts button:nth-child(2)");
+    R3.clicks = [{ at: 27.45, target: opt, act: () => opt().click(), appear: 25.6, hover: 26.15 }];
+    R3.cams = [{ at: 24.95, dur: 1.1, to: () => {
+      const c = dbox(R3, R3.el.querySelector(".code .callout"));
+      if (PORTRAIT) { const z = 1.1, vh = R3.view0.h / z; return { cx: c.x + c.w / 2 + 6, cy: Math.max(vh / 2, c.y + c.h / 2 - vh * 0.36), z }; }
+      // Frame the code column exactly, its right edge on the divider, the callout near the top.
+      const z = 1.75, vw = R3.view0.w / z, vh = R3.view0.h / z, edge = dbox(R3, code).w;
+      return { cx: edge - vw / 2, cy: Math.max(vh / 2, c.y - 34 + vh / 2), z };
+    } }];
+  }
+
+  for (const r of ROUNDS) {
+    // Card size: the opening view, fitted into the region.
+    const P = 14, v = r.view0 = { x: r.view0.x - P, y: r.view0.y - P, w: r.view0.w + 2 * P, h: r.view0.h + 2 * P }, s0 = Math.min(L.region.w / v.w, L.region.h / v.h);
+    r.s0 = s0;
+    r.card = { w: v.w * s0, h: v.h * s0 };
+    r.card.x = L.region.x + (L.region.w - r.card.w) / 2;
+    r.card.y = L.region.y + (L.region.h - r.card.h) / 2;
+    r.cam0 = { cx: v.x + v.w / 2, cy: v.y + v.h / 2, z: 1 };
+    r.demoOff = { x: r.el.getBoundingClientRect().left, y: r.el.getBoundingClientRect().top };
+    r.steps = r.steps || [];
+    // All film-only motion is inline style on the page's own elements, cleared once each lands.
+    for (const p of r.pieces) for (const el of p.els) if (el) el.style.willChange = "opacity, transform";
+  }
+}
+
+/* ---------- per-frame state ---------- */
+let fired = new Set();
+function runEvents(t) {
+  for (const [ri, r] of ROUNDS.entries()) {
+    for (const [k, ev] of [...(r.steps || []), ...(r.clicks || [])].entries()) {
+      const id = ri + ":" + k;
+      if (!fired.has(id) && t >= ev.at) { fired.add(id); ev.act(); }
+    }
+  }
+}
+
+function camAt(r, t) {
+  let c = { ...r.cam0 };
+  for (const m of r.cams) {
+    if (t <= m.at) break;
+    if (!m.resolved) m.resolved = m.to();
+    const k = E.cam(prog(t, m.at, m.at + m.dur));
+    c = { cx: lerp(c.cx, m.resolved.cx, k), cy: lerp(c.cy, m.resolved.cy, k), z: c.z * (m.resolved.z / c.z) ** k };
+  }
+  // A slow breath in while the picture is on screen.
+  c.z *= 1 + 0.04 * E.io(prog(t, r.morph[1], r.exit[0]));
+  return c;
+}
+/* Demo-local point -> stage point, for the camera at time t. */
+function toStage(r, cam, p) {
+  const s = r.s0 * cam.z;
+  return { x: r.card.x + r.card.w / 2 + (p.x - cam.cx) * s, y: r.card.y + r.card.h / 2 + (p.y - cam.cy) * s };
+}
+
+function applyRound(r, t, active) {
+  const f = r.frame;
+  if (!active) { f.style.visibility = "hidden"; return; }
+  f.style.visibility = "visible";
+  const cam = camAt(r, t), s = r.s0 * cam.z;
+  const tx = r.card.w / 2 - (r.demoOff.x + cam.cx) * s, ty = r.card.h / 2 - (r.demoOff.y + cam.cy) * s;
+  f.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  // Build-in: pieces rise and fade in, in order, as the box finishes opening.
+  const t0 = r.morph[0] + 0.32;
+  for (const p of r.pieces) {
+    const k = E.out(prog(t, t0 + p.at, t0 + p.at + 0.45));
+    const rise = p.rise ?? 14;
+    for (const el of p.els) {
+      if (!el) continue;
+      el.style.opacity = k >= 1 ? "" : String(k);
+      el.style.transform = k >= 1 || !rise ? "" : `translateY(${(1 - k) * rise}px)`;
+    }
+  }
+  r.cam = cam;
+}
+
+const lastBox = { rect: null };
+function rr(el, rect, radius) {
+  el.style.transform = `translate(${rect.x}px, ${rect.y}px)`;
+  el.style.width = rect.w + "px"; el.style.height = rect.h + "px";
+  if (radius != null) el.style.borderRadius = radius + "px";
+}
+function typed(r, t) { let n = 0; for (const x of r.times) if (t >= x) n++; return r.text.slice(0, n); }
+
+function seek(t) {
+  runEvents(t);
+
+  /* intro */
+  {
+    const lines = [...intro.querySelectorAll(".ln > span")];
+    lines.forEach((s, i) => { const k = E.out(prog(t, TI.linesIn + i * 0.09, TI.linesIn + i * 0.09 + 0.7)); s.style.transform = `translateY(${(1 - k) * 140}%)`; s.style.visibility = k > 0 ? "visible" : "hidden"; });
+    const k = E.morph(prog(t, TI.out, TI.outEnd));
+    const h = intro.offsetHeight;
+    const y0 = (H - h) / 2 - (PORTRAIT ? 20 : 10);
+    intro.style.transform = `translate(0px, ${y0 - k * (PORTRAIT ? 330 : 110)}px) scale(${1 - k * 0.45})`;
+    intro.style.opacity = String(1 - E.io(PORTRAIT ? prog(t, TI.out + 0.15, TI.outEnd) : prog(t, TI.out, TI.out + 0.4)));
+    intro.style.visibility = t > TI.outEnd ? "hidden" : "visible";
+  }
+
+  /* pips */
+  {
+    const vis = E.out(prog(t, 2.5, 3.1)) * (1 - E.io(prog(t, 30.1, 30.6)));
+    pips.style.opacity = String(vis);
+    pips.style.transform = `translate(${L.pips.x}px, ${L.pips.y + (1 - E.out(prog(t, 2.5, 3.1))) * -10}px)`;
+    [...pips.children].forEach((p, i) => {
+      const r = ROUNDS[i];
+      p.querySelector(".fill").style.width = (prog(t, r.morph[0], r.exit[1]) * 100) + "%";
+      const on = t >= r.type[0] - 0.2 && t < r.exit[1];
+      p.querySelector(".lbl").style.color = on ? "var(--ink)" : (t >= r.exit[1] ? "var(--muted)" : "var(--faint)");
+    });
+  }
+
+  /* which round owns the box right now */
+  let cur = null, phase = "idle";
+  for (const r of ROUNDS) {
+    if (t >= r.send && t < r.morph[0]) { cur = r; phase = "sent"; }
+    if (t >= r.morph[0] && t < r.morph[1]) { cur = r; phase = "morph"; }
+    if (t >= r.morph[1] && t < r.exit[0]) { cur = r; phase = "open"; }
+    if (t >= r.exit[0] && t < r.exit[1]) { cur = r; phase = "exit"; }
+  }
+  for (const r of ROUNDS) applyRound(r, t, r === cur && phase !== "sent");
+
+  /* the box: composer, morphing card, or closing pill */
+  let rect = composerRect, radius = C.r, cmpOpacity = 1, viewOpacity = 0, boxOpacity = 1;
+  const boxIn = PORTRAIT ? E.out(prog(t, 2.25, 2.95)) : E.out(prog(t, 2.5, 3.1));
+  if (t < 3.1) { boxOpacity = boxIn; rect = { ...composerRect, y: composerRect.y + (1 - boxIn) * 28 }; }
+  if (cur && phase !== "sent") {
+    const card = cur.card;
+    if (phase === "morph") { const k = E.morph(prog(t, cur.morph[0], cur.morph[1])); rect = lerpRect(composerRect, card, k); radius = lerp(C.r, L.radius, k); cmpOpacity = 1 - prog(k, 0, 0.28); viewOpacity = E.io(prog(k, 0.4, 0.95)); }
+    if (phase === "open") { rect = card; radius = L.radius; cmpOpacity = 0; viewOpacity = 1; }
+    if (phase === "exit") { const k = E.morph(prog(t, cur.exit[0], cur.exit[1])); rect = lerpRect(card, composerRect, k); radius = lerp(L.radius, C.r, k); viewOpacity = 1 - E.io(prog(k, 0, 0.45)); cmpOpacity = E.io(prog(k, 0.55, 1)); }
+  }
+  if (t >= OUTRO.close[0]) {
+    const k = E.morph(prog(t, OUTRO.close[0], OUTRO.close[1]));
+    const pill = { w: lerp(C.w, 120, k), h: lerp(C.h, 10, k) };
+    rect = { x: (W - pill.w) / 2, y: composerRect.y + (C.h - pill.h) / 2, w: pill.w, h: pill.h };
+    radius = lerp(C.r, 5, k); cmpOpacity = 1 - prog(k, 0, 0.3); boxOpacity = 1 - E.io(prog(k, 0.55, 1));
+  }
+  rr(box, rect, radius);
+  box.style.opacity = String(boxOpacity);
+  box.style.visibility = boxOpacity <= 0.001 ? "hidden" : "visible";
+  cmp.style.opacity = String(cmpOpacity);
+  view.style.opacity = String(viewOpacity);
+
+  /* composer text: the round being typed, or the outro command */
+  // mode: "ph" placeholder, "text" typed text with caret, "sent" the text has left (or, for the outro, stays without caret)
+  let mode = "ph", text = "", typing = false, sendT = null;
+  for (const r of [...ROUNDS, OUTRO]) {
+    if (t >= r.type[0] - 0.4) {
+      text = typed(r, t); typing = t >= r.type[0] && t < r.type[1] + 0.05; sendT = r.send;
+      mode = t < r.send ? (text ? "text" : "ph") : (r === OUTRO ? "kept" : "gone");
+      if (r !== OUTRO && t >= r.exit[0]) mode = "ph";
+    }
+  }
+  const caretOn = (typing || Math.floor(t / 0.53) % 2 === 0) && (mode === "ph" || mode === "text");
+  const caret = `<span id="caret" style="opacity:${caretOn ? 1 : 0}${mode === "ph" ? "; margin:0 3px 0 0" : ""}"></span>`;
+  ctext.innerHTML = mode === "text" ? esc(text) + caret : mode === "kept" ? esc(text) : mode === "ph" ? caret + `<span class="ph">Ask about your code…</span>` : "";
+  const has = mode === "text" || mode === "kept";
+  send.style.background = has ? "var(--ink)" : "var(--line)";
+  send.style.color = has ? "var(--bg)" : "var(--faint)";
+  const pr = sendT != null ? (t < sendT ? 0 : t < sendT + 0.07 ? prog(t, sendT, sendT + 0.07) : 1 - E.out(prog(t, sendT + 0.07, sendT + 0.3))) : 0;
+  send.style.transform = `scale(${1 - 0.14 * pr})`;
+
+  /* the question flies from the composer up to the card's label */
+  {
+    let shown = false;
+    for (const r of ROUNDS) {
+      if (t < r.send || t >= r.exit[1]) continue;
+      shown = true;
+      const from = { x: composerRect.x + C.pad, y: composerRect.y + C.pad };
+      const to = { x: r.card.x, y: r.card.y - L.labelGap - L.cfs * 1.32 * L.labelScale };
+      const k = t < r.morph[0] ? 0 : E.morph(prog(t, r.morph[0] - 0.02, r.morph[1] - 0.05));
+      const sc = lerp(1, L.labelScale, k);
+      fly.textContent = r.text;
+      fly.style.transform = `translate(${lerp(from.x, to.x, k)}px, ${lerp(from.y, to.y, k)}px) scale(${sc})`;
+      fly.style.color = k > 0.5 ? "var(--muted)" : "var(--ink)";
+      fly.style.opacity = String(phase === "exit" && cur === r ? 1 - E.io(prog(t, r.exit[0], r.exit[0] + 0.3)) : 1);
+      fly.style.width = (k > 0 ? Math.max(C.w - 2 * C.pad, r.card.w / L.labelScale) : C.w - 2 * C.pad) + "px";
+    }
+    fly.style.visibility = shown ? "visible" : "hidden";
+  }
+
+  /* caption */
+  {
+    const cap = $("#caption");
+    let txt = "", op = 0, rise = 0;
+    for (const r of ROUNDS) {
+      const [a, b] = r.caption.at;
+      if (t >= a && t < b + 0.2) { txt = r.caption.text; const kin = E.out(prog(t, a, a + 0.32)); op = kin * (1 - prog(t, b, b + 0.2)); rise = (1 - kin) * 12; }
+    }
+    cap.textContent = txt;
+    const w = cap.offsetWidth;
+    cap.style.transform = `translate(${(W - w) / 2}px, ${L.captionY - L.capfs * 0.6 + rise}px)`;
+    cap.style.opacity = String(op);
+  }
+
+  /* "a few minutes later" while the box opens: the film skips the agent's real working time */
+  {
+    let op = 0;
+    for (const r of ROUNDS) op = Math.max(op, E.out(prog(t, r.send + 0.05, r.send + 0.3)) * (1 - E.io(prog(t, r.morph[1] + 0.5, r.morph[1] + 0.8))));
+    later.style.opacity = String(op);
+    const w = later.offsetWidth, h = later.offsetHeight;
+    later.style.transform = `translate(${W - L.later.right - w}px, ${H - L.later.bottom - h}px)`;
+  }
+
+  /* cursor */
+  drawCursor(t, cur);
+
+  /* end card */
+  {
+    const end = $("#end");
+    const parts = [...end.querySelectorAll(".ln > span")];
+    parts.forEach((p, i) => { const k = E.out(prog(t, OUTRO.end + i * 0.12, OUTRO.end + i * 0.12 + 0.75)); p.style.transform = `translateY(${(1 - k) * 140}%)`; p.style.visibility = k > 0 ? "visible" : "hidden"; });
+    end.style.visibility = t >= OUTRO.end ? "visible" : "hidden";
+    const w = end.offsetWidth, h = end.offsetHeight;
+    end.style.transform = `translate(${(W - w) / 2}px, ${(H - h) / 2}px)`;
+  }
+}
+
+/* The cursor glides on a gentle arc between targets that move with the camera, and presses on each click. */
+function drawCursor(t, cur) {
+  let vis = 0, pos = null, press = 0;
+  if (cur && cur.clicks && cur.cam) {
+    const pts = cur.clicks;
+    const first = pts[0];
+    const appear = first.appear ?? first.at - 0.7;
+    const target = ev => { if (ev.frozen && t >= ev.at) return ev.frozen; const el = ev.target(); if (!el) return null; const b = dbox(cur, el); return toStage(cur, cur.cam, { x: b.x + b.w * 0.5, y: b.y + b.h * 0.55 }); };
+    const start = { x: cur.card.x + cur.card.w * 0.84, y: cur.card.y + cur.card.h * 0.9 };
+    let from = start, fromT = appear;
+    pos = start;
+    for (const ev of pts) {
+      const leave = ev.hover ?? Math.max(fromT + 0.15, ev.at - 0.62);
+      const arrive = ev.at - 0.16;
+      const to = target(ev);
+      if (!to) break;
+      if (t < leave) { pos = from; break; }
+      if (t < arrive) { const k = E.io(prog(t, leave, arrive)); const dx = to.x - from.x, dy = to.y - from.y, bend = 4 * k * (1 - k) * 0.08; pos = { x: from.x + dx * k - dy * bend, y: from.y + dy * k + dx * bend }; break; }
+      if (t >= ev.at && !ev.frozen) ev.frozen = to;
+      pos = to;
+      if (t < ev.at + 0.12) press = Math.max(press, 1 - Math.abs(t - (ev.at - 0.02)) / 0.12);
+      from = to; fromT = ev.at;
+    }
+    vis = E.out(prog(t, appear, appear + 0.25)) * (cur === null ? 0 : 1) * (1 - prog(t, cur.exit[0], cur.exit[0] + 0.2));
+  }
+  cursorEl.style.opacity = String(vis);
+  if (pos) cursorEl.style.transform = `translate(${pos.x - 3}px, ${pos.y - 2}px) scale(${1 - 0.1 * clamp(press)})`;
+}
+
+function esc(s) { return s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+window.DURATION = DURATION; window.W = W; window.H = H;
+window.seek = seek;
+window.__ready = (async () => {
+  await document.fonts.ready;
+  for (const r of ROUNDS) await loadRound(r);
+  setupScripts();
+  seek(0);
+  return true;
+})();
+</script>
+</body>
+</html>
