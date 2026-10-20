@@ -5,7 +5,7 @@ plans the film as a storyboard, then builds a frame-accurate video from code, ei
 a faithful walkthrough of a real-looking app, or a motion-design piece that is not a
 walkthrough at all.
 
-https://github.com/user-attachments/assets/183da761-51d4-449c-8c34-f6bf3ba143d0
+https://github.com/user-attachments/assets/1e06deb8-fed8-4d7c-b9c7-07c11430bc5d
 
 *Made with this skill: a 35-second launch film for
 [code-slowmo](https://github.com/precious112/code-slowmo), planned as a storyboard,
