@@ -1,7 +1,7 @@
 # demo-director
 
 **Product demo videos that don't look generated.** A skill for coding agents: it
-plans the film as a storyboard, then builds a frame-accurate video from code — either
+plans the film as a storyboard, then builds a frame-accurate video from code, either
 a faithful walkthrough of a real-looking app, or a motion-design piece that is not a
 walkthrough at all.
 
@@ -11,6 +11,11 @@ https://github.com/user-attachments/assets/183da761-51d4-449c-8c34-f6bf3ba143d0
 [code-slowmo](https://github.com/precious112/code-slowmo), planned as a storyboard,
 then rendered frame by frame from code. It can make videos like this for your
 product too.*
+
+*The skill was distilled from the launch films for
+[Caret](https://github.com/precious112/caret-desktop), a free, open-source design
+canvas over your real code. That campaign is included as a case study in
+`skills/demo-director/assets/examples/caret/`.*
 
 Most demo tools give you a screen recorder and a template. This gives the agent a
 director's rules and a render kit: real UI density, camera and cursor motion with a
@@ -41,24 +46,26 @@ the thesis, the beat sheet, key frames and the captions, and waits for approval.
 node scripts/build-storyboard.mjs plan.json   # → storyboard.html
 ```
 
-You get the one idea, the runtime, the formats, and two or three decisions — not a
+You get the one idea, the runtime, the formats, and two or three decisions, not a
 wall of prose. Approve it, change it, or tell it to **build it anyway**: the skill
 then renders a set of key stills first, says it skipped the plan, and goes straight
 to a preview. A full master is never rendered behind your back.
 
 ## Install
 
-**Claude Code**
+**Claude Code, Codex, Cursor and other agents that support skills**
+
+```
+npx skills add precious112/demo-director
+```
+
+To pick the agent yourself, add `-a`, for example `-a claude-code`.
+
+**Claude Code, as a plugin**
 
 ```
 /plugin marketplace add precious112/demo-director
 /plugin install demo-director@demo-director
-```
-
-**Codex, Cursor and other agents that support skills**
-
-```
-npx skills add precious112/demo-director
 ```
 
 **OpenCode**
@@ -89,7 +96,7 @@ Ask in your own words:
 - "Make a 25-second product demo. The app is in this repo; make it look real."
 - "Walk through how a user connects a bank account."
 - "We need a motion-design promo for our CLI tool. Not a screen recording."
-- "Storyboard it first — I want to review before you render."
+- "Storyboard it first. I want to review before you render."
 - "Turn this launch post into a 15-second vertical clip."
 
 The agent reads the product, picks a mode, writes the plan, and waits. After approval
@@ -98,7 +105,7 @@ master in each format.
 
 You get: the master, the second aspect ratio cut from the same script, short
 cutdowns, a GIF or poster, the stills, the plan and the source. Everything stays
-editable — the film is code.
+editable: the film is code.
 
 ## What it refuses to do
 
@@ -117,7 +124,7 @@ errors:
 - **Copy that could describe anything.** No *supercharge, unleash, seamless,
   effortless, empower, streamline, reimagine*. A checker fails the build on them.
 - **Unwatched renders.** Every film gets a still at a fixed interval, a contact sheet,
-  and a 0.25x pass around every move — because that is where the jumps and overlaps
+  and a 0.25x pass around every move, because that is where the jumps and overlaps
   are.
 
 ## How it works
@@ -189,7 +196,7 @@ node skills/demo-director/assets/examples/code-slowmo/film/render.mjs p
 The rules are not taste alone. They draw on NN/g's motion-duration research and
 video-usability work, IBM Carbon's productive/expressive motion system, Material's
 transition patterns, Apple's motion guidance, WCAG 2.3.1, and current product-demo
-data on runtime, structure and sound-off viewing — plus the camera language the
+data on runtime, structure and sound-off viewing, plus the camera language the
 owner approved after the first Caret film. Sources and specifics are in
 [`references/research.md`](skills/demo-director/references/research.md).
 
